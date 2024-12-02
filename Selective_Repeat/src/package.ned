@@ -9,7 +9,10 @@ import ned.IdealChannel;
 //
 network Network
 {
-    @display("bgb=480,245");
+    parameters:
+        int WS=default(4);
+        int SN=default(7);
+        
     submodules:
         coordinator: Coordinator {
             @display("p=225,80");
@@ -23,5 +26,6 @@ network Network
     connections:
         node.Port <--> IdealChannel <--> coordinator.ports++;
         node1.Port <--> IdealChannel <--> coordinator.ports++;
+    
 }
 

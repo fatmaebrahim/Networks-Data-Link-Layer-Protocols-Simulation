@@ -13,28 +13,14 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-#ifndef __SELECTIVE_REPEAT_NODE_H_
-#define __SELECTIVE_REPEAT_NODE_H_
-
-#include <omnetpp.h>
-#include <vector>
-#include "Frame_m.h"
-
-using namespace omnetpp;
-
-/**
- * TODO - Generated class
- */
-class Node : public cSimpleModule
-{
-public:
-    void sendMessage(string message);
-    std::string CRC(string frame);
-    std::string framing(string line);
-    std::vector<string> readFile(string path);
-  protected:
-    virtual void initialize() override;
-    virtual void handleMessage(cMessage *msg) override;
-};
-
-#endif
+//
+// TODO generated message class
+//
+packet Frame {
+    @customize(true);  // see the generated C++ header for more info
+    int header;    // the data sequence number.
+    string payload; //the message contents after byte stuffing (in characters).
+    char trailer; //CRC
+    int  frameType; // Data=2 / ACK=1 /NACK=0.
+    int ack_nack_number;
+}

@@ -20,6 +20,7 @@ package selective_repeat;
 //
 simple Node
 {
+   
     gates:
         inout Port;
 }
