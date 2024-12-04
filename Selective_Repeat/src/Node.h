@@ -18,6 +18,9 @@
 
 #include <omnetpp.h>
 #include <vector>
+#include <string>
+#include <fstream>
+#include <utility>
 #include "Frame_m.h"
 
 using namespace omnetpp;
@@ -28,10 +31,11 @@ using namespace omnetpp;
 class Node : public cSimpleModule
 {
 public:
-    void sendMessage(string message);
-    std::string CRC(string frame);
-    std::string framing(string line);
-    std::vector<string> readFile(string path);
+    std::pair<std::vector<std::string>, std::vector<std::string>> sendMessage();
+    std::string CRC(std::string frame);
+    std::string framing(std::string line);
+    std::string deframing(std::string frame);
+    std::pair< std::vector<std::string>, std::vector<std::string> > readFile(const std::string& path);
   protected:
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;

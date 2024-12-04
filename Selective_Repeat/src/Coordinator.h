@@ -17,6 +17,10 @@
 #define __SELECTIVE_REPEAT_COORDINATOR_H_
 
 #include <omnetpp.h>
+#include <vector>
+#include <string>
+#include <fstream>
+#include <utility>
 
 using namespace omnetpp;
 
@@ -28,6 +32,7 @@ class Coordinator : public cSimpleModule
   protected:
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;
+    std::pair<std::string, std::string> readLine(const std::string& path);
 };
 
 #endif

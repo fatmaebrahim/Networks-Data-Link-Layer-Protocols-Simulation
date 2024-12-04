@@ -20,9 +20,46 @@ Define_Module(Coordinator);
 void Coordinator::initialize()
 {
     // TODO - Generated method body
+    std::string path2 = "D:\\Fatma\\1stTerm_4thYear\\Networks\\Project\\2024_project\\coordinator.txt";
+
+    auto res = readLine(path2);
+    std::string node_id = res.first;
+    std::string start_time = res.second;
+    std::cout <<"nodeid: "<< node_id << " "<<"starttime: "<<start_time<<"\n";
+
+
+
+
+    if (node_id=="0"){
+        cMessage *msg=new cMessage("start");
+        send(msg,"ports$o",0);
+    }else{
+        cMessage *msg=new cMessage("start");
+        send(msg,"ports$o",1);
+    }
+
+
+
 }
 
 void Coordinator::handleMessage(cMessage *msg)
 {
     // TODO - Generated method body
+}
+
+
+std::pair<std::string, std::string>Coordinator:: readLine(const std::string& path) {
+    std::ifstream file(path);
+    std::string node_id;
+    std::string start_time;
+    std::string line;
+    if (!file.is_open()) {
+        throw std::runtime_error("Could not open the file.");
+    }
+    while (std::getline(file, line)) {
+        node_id = line[0];
+        start_time = line[2];
+    }
+    file.close();
+    return std::make_pair(node_id, start_time);
 }
