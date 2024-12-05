@@ -21,6 +21,7 @@
 #include <string>
 #include <fstream>
 #include <utility>
+#include <bitset>
 #include "Frame_m.h"
 
 using namespace omnetpp;
@@ -32,7 +33,9 @@ class Node : public cSimpleModule
 {
 public:
     std::pair<std::vector<std::string>, std::vector<std::string>> sendMessage();
-    std::string CRC(std::string frame);
+    std::string calculateCRC(const std::string& input, const std::string& polynomial);
+    bool verifyCRC(const std::string& receivedMessage, const std::string& polynomial);
+
     std::string framing(std::string line);
     std::string deframing(std::string frame);
     std::pair< std::vector<std::string>, std::vector<std::string> > readFile(const std::string& path);
