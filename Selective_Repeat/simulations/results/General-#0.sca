@@ -1,8 +1,8 @@
 version 3
-run General-0-20241205-00:04:29-26448
+run General-0-20241211-00:07:15-6956
 attr configname General
-attr datetime 20241205-00:04:29
-attr datetimef 20241205-000429
+attr datetime 20241211-00:07:15
+attr datetimef 20241211-000715
 attr experiment General
 attr inifile omnetpp.ini
 attr iterationvars ""
@@ -10,7 +10,7 @@ attr iterationvarsd ""
 attr iterationvarsf ""
 attr measurement ""
 attr network selective_repeat.Network
-attr processid 26448
+attr processid 6956
 attr repetition 0
 attr replication #0
 attr resultdir results
@@ -28,4 +28,10 @@ par Network.node1 typename "\"selective_repeat.Node\""
 par Network typename "\"selective_repeat.Network\""
 par Network WS 4
 par Network SN 7
+par Network TO 10
+par Network PT 0.5
+par Network TD 1
+par Network ED 4
+par Network DD 1
+par Network LP 0
 

@@ -19,7 +19,7 @@ Define_Module(Node);
 //Sender variable
 int WS;
 int sender_start_index=0;
-int sender_end_index=WS-1;
+int sender_end_index;
 int sender_index=0;
 std::vector<Frame_Base*> sender_buffer(WS);
 int ack_expected=0;
@@ -28,50 +28,104 @@ bool no_nack=true;
 
 //Receiver Variable
 int receiver_start_index=0;
-int receiver_end_index=WS-1;
+int receiver_end_index;
 int receiver_index=0;
 std::vector<Frame_Base*> receiver_buffer(WS);
 std::vector<bool> arrived(WS,false);
 int frame_expected=0;
 Frame_Base* frame;
-bool is_sender;
+int senderID;
+
+int frames_index=0;
 
 enum event_type{frame_arrival,CRC_error,frame_timeout,ack_timeout};
 event_type event;
+
+//may be needed
+bool flag_timout;
+bool flag_nack;
+std::string current_error;
+
 
 void Node::initialize()
 {
     // TODO - Generated method body
     WS=this->getParentModule()->par("WS").intValue();
+    receiver_end_index=WS-1;
+    sender_end_index=WS-1;
+
 }
 
 void Node::handleMessage(cMessage *msg)
 {
-    if(strcmp(msg->getName(),"start")==0){
-        is_sender=true;
-
-    }else{
-        is_sender=false;
-    }
-
     // TODO - Generated method body
-    //check if it is sender node or receiver based on coordinator
-    if(is_sender) //should be modified
-    {
-        auto result = sendMessage();
-        std::vector<std::string> codes = result.first;
-        std::vector<std::string> frames = result.second;
-        for(int i =0; i<codes.size();i++){
-            std::cout << codes[i] << " : "<<frames[i]<<"\n";
-        }
+    double timeout = getParentModule()->par("TO").doubleValue();
+    double process_time =getParentModule()->par("PT").doubleValue();
+    double trans_delay = getParentModule()->par("TD").doubleValue();
+    EV << "Received a message: " << msg->getName() << endl;
+
+    Frame_Base* received = dynamic_cast<Frame_Base*>(msg);
+    if(strcmp(msg->getName(),"0")==0){
+        //message from coordinator
+        path= "../simulations/inputs/input0.txt";
+        prepareMessages();
+        senderID=0;
+        start();
 
     }
+    else  if(strcmp(msg->getName(),"1")==0){
+        //message from coordinator
+        path= "../simulations/inputs/input1.txt";
+        prepareMessages();
+        senderID=1;
+        start();
+    }
+
     else {
 
+        if (received->getFrameType()==2){
+            //receive
+            EV << "recieved: " << received->getName() << endl;
+        }
+        else  if (received->getFrameType()==1){
+            //send
+            EV << "ack: " << received->getName() << endl;
+        }
+        else  if (received->getFrameType()==0){
+               //send
+            EV << "notack: " << received->getName() << endl;
+
+        }
     }
+
 }
 
 
+
+void Node::start(){
+    for (int i = sender_start_index; i<=sender_end_index; i++){
+        std::cout<<i<<": "<<frames[frames_index]<<"\n";
+        Frame_Base* frame_to_send = new Frame_Base;
+        frame_to_send->setPayload(frames[frames_index].c_str());
+        frame_to_send->setFrameType(2);
+        current_error=codes[frames_index];
+        flag_timout=false;
+        flag_nack=false;
+        frame_to_send=applyError(frame_to_send);
+        //seqno
+        //ackno
+        next_frame_to_send++;
+        frames_index++;
+        scheduleAt(simTime()+getParentModule()->par("PT").doubleValue()*(i+1),frame_to_send);
+    }
+
+}
+
+Frame_Base*Node:: applyError(Frame_Base *msg){
+    //apply error on msg using current_error
+    return msg;
+    //ToDo
+}
 
 
 std::pair< std::vector<std::string>, std::vector<std::string> >Node:: readFile(const std::string& path)
@@ -189,15 +243,13 @@ bool Node::verifyCRC(const std::string& receivedMessage, const std::string& poly
 }
 
 
-std::pair< std::vector<std::string>, std::vector<std::string>> Node:: sendMessage()
+void Node:: prepareMessages()
 {
     //TODO
-    std::string path = "D:\\Fatma\\1stTerm_4thYear\\Networks\\Project\\2024_project\\input0.txt";
-
             auto result = readFile(path);
-            std::vector<std::string> codes = result.first;
+            codes = result.first;
             std::vector<std::string> payloads = result.second;
-            std::vector<std::string> frames ;
+
             for (const auto& payload : payloads) {
                 std::string framed = framing(payload);
                 std::string polynomial = "1101";
@@ -205,7 +257,6 @@ std::pair< std::vector<std::string>, std::vector<std::string>> Node:: sendMessag
                 std::string messageWithCRC = calculateCRC(binaryMessage, polynomial);
                 frames.push_back(messageWithCRC);
             }
-            return std::make_pair(codes, frames);
 
 }
 

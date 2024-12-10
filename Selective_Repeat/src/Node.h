@@ -32,13 +32,19 @@ using namespace omnetpp;
 class Node : public cSimpleModule
 {
 public:
-    std::pair<std::vector<std::string>, std::vector<std::string>> sendMessage();
+
+    void prepareMessages();
+    void start();
+    Frame_Base* applyError(Frame_Base* msg);
     std::string calculateCRC(const std::string& input, const std::string& polynomial);
     bool verifyCRC(const std::string& receivedMessage, const std::string& polynomial);
 
     std::string framing(std::string line);
     std::string deframing(std::string frame);
     std::pair< std::vector<std::string>, std::vector<std::string> > readFile(const std::string& path);
+    std::vector<std::string> codes;
+    std::vector<std::string> frames;
+    std::string path ;
   protected:
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;

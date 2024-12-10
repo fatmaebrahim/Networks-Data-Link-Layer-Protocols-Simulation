@@ -20,24 +20,22 @@ Define_Module(Coordinator);
 void Coordinator::initialize()
 {
     // TODO - Generated method body
-    std::string path2 = "D:\\Fatma\\1stTerm_4thYear\\Networks\\Project\\2024_project\\coordinator.txt";
+    std::string path2 = "../simulations/inputs/coordinator.txt";
 
     auto res = readLine(path2);
     std::string node_id = res.first;
     std::string start_time = res.second;
     std::cout <<"nodeid: "<< node_id << " "<<"starttime: "<<start_time<<"\n";
 
-
-
-
     if (node_id=="0"){
-        cMessage *msg=new cMessage("start");
+        cMessage *msg=new cMessage("0");
+        std::cout<<node_id<<"\n";
         send(msg,"ports$o",0);
     }else{
-        cMessage *msg=new cMessage("start");
+        cMessage *msg=new cMessage("1");
+        std::cout<<node_id<<"\n";
         send(msg,"ports$o",1);
     }
-
 
 
 }
