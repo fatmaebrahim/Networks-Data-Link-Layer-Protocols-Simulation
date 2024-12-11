@@ -33,6 +33,8 @@ class Node : public cSimpleModule
 {
 public:
 
+    void receiveFrame(cMessage *msg);
+    void sendFrame(cMessage *msg);
     void prepareMessages();
     void start();
     Frame_Base* applyError(Frame_Base* msg);
@@ -41,9 +43,7 @@ public:
 
     std::string framing(std::string line);
     std::string deframing(std::string frame);
-    std::pair< std::vector<std::string>, std::vector<std::string> > readFile(const std::string& path);
-    std::vector<std::string> codes;
-    std::vector<std::string> frames;
+    std::vector<std::string> readFile(const std::string& path);
     std::string path ;
   protected:
     virtual void initialize() override;

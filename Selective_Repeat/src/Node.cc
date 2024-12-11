@@ -21,7 +21,9 @@ int WS;
 int sender_start_index=0;
 int sender_end_index;
 int sender_index=0;
-std::vector<Frame_Base*> sender_buffer(WS);
+std::vector<Frame_Base*> sender_buffer;
+std::vector<std::string> sender_buffer_codes;
+std::vector<Frame_Base*> timeouts;
 int ack_expected=0;
 int next_frame_to_send=0;
 bool no_nack=true;
@@ -30,13 +32,12 @@ bool no_nack=true;
 int receiver_start_index=0;
 int receiver_end_index;
 int receiver_index=0;
-std::vector<Frame_Base*> receiver_buffer(WS);
-std::vector<bool> arrived(WS,false);
+std::vector<Frame_Base*> receiver_buffer;
+std::vector<bool> arrived;
 int frame_expected=0;
 Frame_Base* frame;
 int senderID;
 
-int frames_index=0;
 
 enum event_type{frame_arrival,CRC_error,frame_timeout,ack_timeout};
 event_type event;
@@ -62,10 +63,11 @@ void Node::handleMessage(cMessage *msg)
     double timeout = getParentModule()->par("TO").doubleValue();
     double process_time =getParentModule()->par("PT").doubleValue();
     double trans_delay = getParentModule()->par("TD").doubleValue();
-    EV << "Received a message: " << msg->getName() << endl;
+
 
     Frame_Base* received = dynamic_cast<Frame_Base*>(msg);
     if(strcmp(msg->getName(),"0")==0){
+        EV << "Received a message: " << msg->getName() << endl;
         //message from coordinator
         path= "../simulations/inputs/input0.txt";
         prepareMessages();
@@ -74,22 +76,27 @@ void Node::handleMessage(cMessage *msg)
 
     }
     else  if(strcmp(msg->getName(),"1")==0){
+        EV << "Received a message: " << msg->getName() << endl;
         //message from coordinator
         path= "../simulations/inputs/input1.txt";
         prepareMessages();
         senderID=1;
         start();
+
     }
 
     else {
 
         if (received->getFrameType()==2){
             //receive
-            EV << "recieved: " << received->getName() << endl;
+            EV<<"Node:"<<1-senderID<<" is receiving"<<"\n";
+            EV << "recieved: " << received->getPayload() << endl;
+            receiveFrame(received);
         }
         else  if (received->getFrameType()==1){
             //send
-            EV << "ack: " << received->getName() << endl;
+            EV << "ack: " << received->getAck_nack_number() << endl;
+            sendFrame(received);
         }
         else  if (received->getFrameType()==0){
                //send
@@ -100,24 +107,83 @@ void Node::handleMessage(cMessage *msg)
 
 }
 
+void Node::sendFrame(cMessage *msg){
+    Frame_Base* received = dynamic_cast<Frame_Base*>(msg);
+    EV << "start:" << sender_start_index<<"  end:"<<sender_end_index<<"  to_send:" <<next_frame_to_send<<"\n";
+    int ackno= received->getAck_nack_number();
+    //slide window
+    while (sender_buffer[sender_start_index]->getHeader()!= received->getAck_nack_number()) {
+        //mark other frames as sent to stop their timers --todo
+        EV<<timeouts.size()<<"\n";
+        cancelEvent(timeouts[sender_start_index]);
+        sender_start_index++;
+        if(sender_end_index<WS-1){
+           sender_end_index++;
+         }
+    }
 
+    //send frames in the new window
+    EV<<"Node:"<<senderID<<" is sending"<<"\n";
+    int index=0;
 
-void Node::start(){
-    for (int i = sender_start_index; i<=sender_end_index; i++){
-        std::cout<<i<<": "<<frames[frames_index]<<"\n";
-        Frame_Base* frame_to_send = new Frame_Base;
-        frame_to_send->setPayload(frames[frames_index].c_str());
-        frame_to_send->setFrameType(2);
-        current_error=codes[frames_index];
+    for (int i = next_frame_to_send; i<=sender_end_index; i++){
+
         flag_timout=false;
         flag_nack=false;
+        Frame_Base* frame_to_send = sender_buffer[i]->dup();
+        frame_to_send=sender_buffer[i];
+        frame_to_send->setFrameType(2);
+        current_error=sender_buffer_codes[i];
         frame_to_send=applyError(frame_to_send);
         //seqno
         //ackno
         next_frame_to_send++;
-        frames_index++;
-        scheduleAt(simTime()+getParentModule()->par("PT").doubleValue()*(i+1),frame_to_send);
+        //supposed to get handled in apply error , assume no errors
+        double time=simTime().dbl()+getParentModule()->par("PT").doubleValue()*(i+1);
+        EV<<i<<": "<<sender_buffer[i]<<"at time:"<<time<<"\n";
+        sendDelayed(frame_to_send,time, "out");
+        Frame_Base*  temp_frame = frame_to_send->dup();
+        timeouts.push_back(temp_frame);
+        //add TO to handle timeout where it will send a message to itself at timeouts
+        scheduleAt(simTime()+getParentModule()->par("PT").doubleValue()*(index+1)+ getParentModule()->par("TO").doubleValue(),temp_frame);
+        index++;
     }
+
+
+
+}
+
+void Node::receiveFrame(cMessage *msg){
+
+}
+
+
+
+void Node::start(){
+    EV<<"Node:"<<senderID<<" is sending"<<"\n";
+
+    for (int i = sender_start_index; i<=sender_end_index; i++){
+        EV<<i<<": "<<sender_buffer[i]<<"\n";
+        flag_timout=false;
+        flag_nack=false;
+        Frame_Base* frame_to_send = new Frame_Base;
+        frame_to_send = sender_buffer[i]->dup();
+        frame_to_send->setFrameType(2);
+        current_error=sender_buffer_codes[i];
+        frame_to_send=applyError(frame_to_send);
+        //seqno
+        //ackno
+        next_frame_to_send++;
+        //supposed to get handled in apply error , assume no errors
+        double time=simTime().dbl()+getParentModule()->par("PT").doubleValue()*(i+1);
+        EV<<i<<": "<<sender_buffer[i]<<"at time:"<<time<<"\n";
+        sendDelayed(frame_to_send,time, "out");
+        Frame_Base*  temp_frame = frame_to_send->dup();
+        timeouts.push_back(temp_frame);
+        //add TO to handle timeout where it will send a message to itself at timeouts
+        scheduleAt(simTime()+getParentModule()->par("PT").doubleValue()*(i+1)+ getParentModule()->par("TO").doubleValue(),temp_frame);
+    }
+
 
 }
 
@@ -128,9 +194,8 @@ Frame_Base*Node:: applyError(Frame_Base *msg){
 }
 
 
-std::pair< std::vector<std::string>, std::vector<std::string> >Node:: readFile(const std::string& path)
+std::vector<std::string> Node:: readFile(const std::string& path)
 {
-    std::vector<std::string> codes;
     std::vector<std::string> payloads;
     std::string code;
     std::string payload;
@@ -144,12 +209,12 @@ std::pair< std::vector<std::string>, std::vector<std::string> >Node:: readFile(c
     while (std::getline(file, line)) {
         code = line.substr(0, 4);
         payload = line.substr(5, line.size());
-        codes.push_back(code);
         payloads.push_back(payload);
+        sender_buffer_codes.push_back(code);
     }
 
     file.close();
-    return std::make_pair(codes, payloads);
+    return  payloads;
 }
 
 std::string Node::framing(std::string line)
@@ -246,17 +311,19 @@ bool Node::verifyCRC(const std::string& receivedMessage, const std::string& poly
 void Node:: prepareMessages()
 {
     //TODO
-            auto result = readFile(path);
-            codes = result.first;
-            std::vector<std::string> payloads = result.second;
 
-            for (const auto& payload : payloads) {
-                std::string framed = framing(payload);
+            std::vector<std::string> payloads = readFile(path);
+            Frame_Base* frame = new Frame_Base;
+            for (int i=0 ;i<payloads.size();i++) {
+                std::string framed = framing(payloads[i]);
                 std::string polynomial = "1101";
                 std::string binaryMessage = stringToBinary(framed);
                 std::string messageWithCRC = calculateCRC(binaryMessage, polynomial);
-                frames.push_back(messageWithCRC);
+                frame->setPayload(messageWithCRC.c_str());
+                sender_buffer.push_back(frame);
             }
+
+
 
 }
 

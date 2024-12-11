@@ -23,4 +23,6 @@ simple Node
    
     gates:
         inout Port;
+        input in;
+        output out;
 }

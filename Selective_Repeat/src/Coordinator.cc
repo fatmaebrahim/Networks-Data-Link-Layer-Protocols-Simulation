@@ -30,11 +30,14 @@ void Coordinator::initialize()
     if (node_id=="0"){
         cMessage *msg=new cMessage("0");
         std::cout<<node_id<<"\n";
-        send(msg,"ports$o",0);
+        msg->setName("0");
+        sendDelayed(msg, stoi(start_time), "ports$o",0);
+//        send(msg,"ports$o",0);
     }else{
         cMessage *msg=new cMessage("1");
         std::cout<<node_id<<"\n";
-        send(msg,"ports$o",1);
+        msg->setName("1");
+        sendDelayed(msg, stoi(start_time), "ports$o",1);
     }
 
 
