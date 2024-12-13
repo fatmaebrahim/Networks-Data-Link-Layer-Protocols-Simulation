@@ -37,7 +37,7 @@ public:
     void sendFrame(cMessage *msg);
     void prepareMessages();
     void start();
-    Frame_Base* applyError(Frame_Base* msg);
+    Frame_Base* applyError(Frame_Base* msg,std::string code_error);
     std::string calculateCRC(const std::string& input, const std::string& polynomial);
     bool verifyCRC(const std::string& receivedMessage, const std::string& polynomial);
 
