@@ -106,7 +106,24 @@ void Node::handleMessage(cMessage *msg)
     }
 
 }
+// Function to convert a string to binary representation
+std::string stringToBinary(const std::string& input) {
+    std::string binaryString;
+    for (char c : input) {
+        binaryString += std::bitset<8>(c).to_string(); // Convert each char to 8-bit binary
+    }
+    return binaryString;
+}
 
+// Function to convert binary back to string (optional for debugging)
+std::string binaryToString(const std::string& binary) {
+    std::string result;
+    for (size_t i = 0; i < binary.size(); i += 8) {
+        std::bitset<8> charBits(binary.substr(i, 8));
+        result += static_cast<char>(charBits.to_ulong());
+    }
+    return result;
+}
 void Node::sendFrame(cMessage *msg){
     Frame_Base* received = dynamic_cast<Frame_Base*>(msg);
     EV << "start:" << sender_start_index<<"  end:"<<sender_end_index<<"  to_send:" <<next_frame_to_send<<"\n";
@@ -177,7 +194,7 @@ void Node::start(){
         //supposed to get handled in apply error , assume no errors
         double time=simTime().dbl()+getParentModule()->par("PT").doubleValue()*(i+1);
         EV<<i<<": "<<sender_buffer[i]<<"at time:"<<time<<"\n";
-        EV<"At time ["<<time<<"], Node["<<senderID<<"] [sent] frame and payload=["<< frame_to_send->getPayload()<<"]"<<endl;
+//        EV<"At time ["<<time<<"], Node["<<senderID<<"] [sent] frame and payload=["<< frame_to_send->getPayload()<<"]"<<endl;
 
         sendDelayed(frame_to_send,time, "out");
         Frame_Base*  temp_frame = frame_to_send->dup();
@@ -200,7 +217,7 @@ Frame_Base*Node:: applyError(Frame_Base *msg,std::string code_error){
         for no delay , otherwise the error delay interval]. */
     if(code_error[0]=='1') // Modification
     {
-            int modified_bit = int(uniform(0, 8 * msg->getPayload().length())); // Assuming 8 bits per character
+            int modified_bit = int(uniform(0, 8 * std::string(msg->getPayload()).size())); // Assuming 8 bits per character
             std::string payload = msg->getPayload();
             std::string binaryPayload = stringToBinary(payload);
 
@@ -222,7 +239,7 @@ Frame_Base*Node:: applyError(Frame_Base *msg,std::string code_error){
         /*"At time[" << simTime()+getParentModule()->par("PT").doubleValue()*(i+1) << "], Node["<<senderID<<"] sent frame with seq_num=["<< transmittedMsg->getSeqNumber() <<"] and payload=["<< transmittedMsg->getPayload()<<"]"<<
                 " and trailer=["<< toBinary(transmittedMsg->getParity())<<"]" << "Modified [" << modified << "]" << "Lost [" << lost << "]" << ", Duplicate [" << duplicate << "], Delay [" << eD << "]"<< endl;*/
         EV<<", Modified [-1] , Lost [Yes], Duplicate [0], Delay [0]."<<endl;
-        return;
+        return nullptr;
 
     }else if (code_error[2]=='1')//Duplication
     {
@@ -314,24 +331,7 @@ std::string Node:: deframing(std::string frame)
     }
     return line;
 }
-// Function to convert a string to binary representation
-std::string stringToBinary(const std::string& input) {
-    std::string binaryString;
-    for (char c : input) {
-        binaryString += std::bitset<8>(c).to_string(); // Convert each char to 8-bit binary
-    }
-    return binaryString;
-}
 
-// Function to convert binary back to string (optional for debugging)
-std::string binaryToString(const std::string& binary) {
-    std::string result;
-    for (size_t i = 0; i < binary.size(); i += 8) {
-        std::bitset<8> charBits(binary.substr(i, 8));
-        result += static_cast<char>(charBits.to_ulong());
-    }
-    return result;
-}
 
 // CRC calculation function
 std::string Node::calculateCRC(const std::string& input, const std::string& polynomial) {
