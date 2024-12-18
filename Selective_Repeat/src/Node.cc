@@ -152,6 +152,8 @@ void Node::sendFrame(cMessage *msg){
         frame_to_send->setFrameType(2);
         current_error=sender_buffer_codes[i];
         frame_to_send=applyError(frame_to_send,sender_buffer_codes[i]);
+        if (frame_to_send ==nullptr) //the frame is lost
+            continue;
         //seqno
         //ackno
         next_frame_to_send++;
@@ -188,13 +190,18 @@ void Node::start(){
         frame_to_send->setFrameType(2);
         current_error=sender_buffer_codes[i];
         frame_to_send=applyError(frame_to_send,sender_buffer_codes[i]);
+        if (frame_to_send ==nullptr) //the frame is lost
+        {
+        EV<<"At time ["<<time<<"], Node["<<senderID<<"] [lost] frame "<<endl;
+              continue;
+        }
         //seqno
         //ackno
         next_frame_to_send++;
         //supposed to get handled in apply error , assume no errors
         double time=simTime().dbl()+getParentModule()->par("PT").doubleValue()*(i+1);
         EV<<i<<": "<<sender_buffer[i]<<"at time:"<<time<<"\n";
-//        EV<"At time ["<<time<<"], Node["<<senderID<<"] [sent] frame and payload=["<< frame_to_send->getPayload()<<"]"<<endl;
+        EV<<"At time ["<<time<<"], Node["<<senderID<<"] [sent] frame and payload=["<< (frame_to_send->getPayload())<<"]"<<endl;
 
         sendDelayed(frame_to_send,time, "out");
         Frame_Base*  temp_frame = frame_to_send->dup();
@@ -207,59 +214,126 @@ void Node::start(){
 }
 //[Modification, Loss, Duplication, Delay]
 
-Frame_Base*Node:: applyError(Frame_Base *msg,std::string code_error){
-    //apply error on msg using current_error
-        /*
-         * At time [.. starting sending time after processing….. ], Node[id] [sent] frame with
-        seq_num=[..] and payload=[ ….. in characters after modification….. ] and trailer=[ …….in
-        bits….. ] , Modified [-1 for no modification, otherwise the modified bit number] , Lost
-        [Yes/No], Duplicate [0 for none, 1 for the first version, 2 for the second version], Delay [0
-        for no delay , otherwise the error delay interval]. */
-    if(code_error[0]=='1') // Modification
-    {
-            int modified_bit = int(uniform(0, 8 * std::string(msg->getPayload()).size())); // Assuming 8 bits per character
-            std::string payload = msg->getPayload();
-            std::string binaryPayload = stringToBinary(payload);
-
-            binaryPayload[modified_bit] = (binaryPayload[modified_bit] == '0') ? '1' : '0';
-
-            std::string modifiedPayload = binaryToString(binaryPayload);
-            msg->setPayload(modifiedPayload.c_str());
-
-            EV << "Modified bit: " << modified_bit
-               << " | Original payload: " << payload
-               << " | Modified payload: " << modifiedPayload << endl;
-
-            // Set the modification log
-            EV << "Modified [" << modified_bit << "] , Lost [No], Duplicate [0], Delay [0]." << endl;
-
-
-    }else if (code_error[1]=='1') //Loss
-    {
-        /*"At time[" << simTime()+getParentModule()->par("PT").doubleValue()*(i+1) << "], Node["<<senderID<<"] sent frame with seq_num=["<< transmittedMsg->getSeqNumber() <<"] and payload=["<< transmittedMsg->getPayload()<<"]"<<
-                " and trailer=["<< toBinary(transmittedMsg->getParity())<<"]" << "Modified [" << modified << "]" << "Lost [" << lost << "]" << ", Duplicate [" << duplicate << "], Delay [" << eD << "]"<< endl;*/
-        EV<<", Modified [-1] , Lost [Yes], Duplicate [0], Delay [0]."<<endl;
+//Frame_Base*Node:: applyError(Frame_Base *msg,std::string code_error){
+//    //apply error on msg using current_error
+//        /*
+//         * At time [.. starting sending time after processing….. ], Node[id] [sent] frame with
+//        seq_num=[..] and payload=[ ….. in characters after modification….. ] and trailer=[ …….in
+//        bits….. ] , Modified [-1 for no modification, otherwise the modified bit number] , Lost
+//        [Yes/No], Duplicate [0 for none, 1 for the first version, 2 for the second version], Delay [0
+//        for no delay , otherwise the error delay interval]. */
+//    if (code_error[1]=='1') //Loss as it will dominate the frame is lost and that is it
+//        {
+//            /*"At time[" << simTime()+getParentModule()->par("PT").doubleValue()*(i+1) << "], Node["<<senderID<<"] sent frame with seq_num=["<< transmittedMsg->getSeqNumber() <<"] and payload=["<< transmittedMsg->getPayload()<<"]"<<
+//                    " and trailer=["<< toBinary(transmittedMsg->getParity())<<"]" << "Modified [" << modified << "]" << "Lost [" << lost << "]" << ", Duplicate [" << duplicate << "], Delay [" << eD << "]"<< endl;*/
+//            EV<<", Modified [-1] , Lost [Yes], Duplicate [0], Delay [0]."<<endl;
+//            return nullptr;
+//
+//        }
+//    else if(code_error[0]=='1') // Modification
+//    {
+//            Frame_Base* modified_frame=new Frame_Base;
+//            modified_frame=msg->dup();
+//            int modified_bit = int(uniform(0,  std::string(modified_frame->getPayload()).size())); // Assuming 8 bits per character
+//            EV<<"The size of the string is "<<std::string(modified_frame->getPayload()).size()<<endl;
+//            std::string payload = modified_frame->getPayload();
+//            std::string binaryPayload = stringToBinary(payload);
+//            EV<<"Binary payload before is "<<binaryPayload[modified_bit]<<endl;
+//            binaryPayload[modified_bit] = (binaryPayload[modified_bit] == '0') ? '1' : '0';
+//            EV<<"Binary payload after is "<<binaryPayload[modified_bit]<<endl;
+//
+////            std::string modifiedPayload = binaryToString(binaryPayload);
+//            modified_frame->setPayload(binaryPayload.c_str());
+//
+//            EV << "Modified bit: " << modified_bit
+//               << " | Original payload: " << payload
+//               << " | Modified payload: " << binaryPayload << endl;
+//
+//            // Set the modification log
+//            EV << "Modified [" << modified_bit << "] , Lost [No], Duplicate [0], Delay [0]." << endl;
+//            return modified_frame;
+//
+//
+//    } else if (code_error[2]=='1')//Duplication
+//    {
+//        //NOT Complete
+//        double DD = getParentModule()->par("DD").doubleValue();
+//        Frame_Base*  duplicated_msg= msg->dup();
+//
+//        scheduleAt(simTime()+DD,duplicated_msg);
+//
+//
+//    }else if (code_error[3]=='1')//Delay
+//    {
+//        double delayTime=getParentModule()->par("ED").doubleValue();
+//        scheduleAt(simTime() + delayTime, msg);
+//        EV << ", Modified [-1] , Lost [Yes], Duplicate [0], Delay ["<<delayTime<<"]." << endl;
+//
+//    }
+//    //see if the codes
+//    return msg;
+//    //ToDo
+//}
+Frame_Base* Node::applyError(Frame_Base *msg, std::string code_error) {
+    if (code_error[1] == '1') { // Loss
+        EV << ", Modified [-1], Lost [Yes], Duplicate [0], Delay [0]." << endl;
         return nullptr;
+    } else if (code_error[0] == '1') { // Modification
+        // Duplicate and modify the frame
+        Frame_Base* modified_frame = msg->dup();
+        std::string payload = modified_frame->getPayload();
+        if (payload.empty()) {
+            EV << "Error: Payload is empty; no modification applied." << endl;
+            return modified_frame;
+        }
 
-    }else if (code_error[2]=='1')//Duplication
-    {
-        //NOT Complete
+        // Convert payload to binary
+        std::string binaryPayload = stringToBinary(payload);
+        if (binaryPayload.empty()) {
+            EV << "Error: Failed to convert payload to binary; no modification applied." << endl;
+            return modified_frame;
+        }
+
+        EV << "Original payload: " << payload << endl;
+        EV << "Binary payload before modification: " << binaryPayload << endl;
+
+        // Modify a random bit in the binary payload
+        int modified_bit = int(uniform(0, binaryPayload.size()));
+        EV<<"Modified bit before being modified"<<binaryPayload[modified_bit]<<endl;
+        binaryPayload[modified_bit] = (binaryPayload[modified_bit] == '0') ? '1' : '0';
+        EV<<"Modified bit after being modified"<<binaryPayload[modified_bit]<<endl;
+
+        EV << "Modified bit: " << modified_bit << endl;
+        EV << "Binary payload after modification: " << binaryPayload << endl;
+
+        // Convert binary payload back to string
+        if (binaryPayload.size() % 8 != 0) {
+            EV << "Error: Binary payload size is not a multiple of 8; modification failed." << endl;
+            return modified_frame;
+        }
+
+        std::string modifiedPayload = binaryToString(binaryPayload);
+        modified_frame->setPayload(modifiedPayload.c_str());
+
+        EV << "Modified payload: " << modifiedPayload << endl;
+        EV << "Modified [" << modified_bit << "], Lost [No], Duplicate [0], Delay [0]." << endl;
+
+        return modified_frame;
+
+    } else if (code_error[2] == '1') { // Duplication
         double DD = getParentModule()->par("DD").doubleValue();
-        Frame_Base*  duplicated_msg= msg->dup();
+        Frame_Base* duplicated_msg = msg->dup();
 
-        scheduleAt(simTime()+DD,duplicated_msg);
+        scheduleAt(simTime() + DD, duplicated_msg);
+        EV << ", Modified [-1], Lost [No], Duplicate [1], Delay [0]." << endl;
 
-
-    }else if (code_error[3]=='1')//Delay
-    {
-        double delayTime=getParentModule()->par("ED").doubleValue();
+    } else if (code_error[3] == '1') { // Delay
+        double delayTime = getParentModule()->par("ED").doubleValue();
         scheduleAt(simTime() + delayTime, msg);
-        EV << ", Modified [-1] , Lost [Yes], Duplicate [0], Delay ["<<delayTime<<"]." << endl;
-
+        EV << ", Modified [-1], Lost [No], Duplicate [0], Delay [" << delayTime << "]." << endl;
     }
-    //see if the codes
+
     return msg;
-    //ToDo
 }
 
 
