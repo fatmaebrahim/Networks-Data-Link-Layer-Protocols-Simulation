@@ -154,11 +154,17 @@ void Node::sendFrame(cMessage *msg){
         frame_to_send=applyError(frame_to_send,sender_buffer_codes[i]);
         if (frame_to_send ==nullptr) //the frame is lost
             continue;
+        double delayTime=0;
+               if (sender_buffer_codes[i][3]=='1')
+               {
+                    delayTime = frame_to_send->par("delay").doubleValue();
+
+               }
         //seqno
         //ackno
         next_frame_to_send++;
         //supposed to get handled in apply error , assume no errors
-        double time=simTime().dbl()+getParentModule()->par("PT").doubleValue()*(i+1);
+        double time=simTime().dbl()+getParentModule()->par("PT").doubleValue()*(i+1)+delayTime;
         EV<<i<<": "<<sender_buffer[i]<<"at time:"<<time<<"\n";
         sendDelayed(frame_to_send,time, "out");
         Frame_Base*  temp_frame = frame_to_send->dup();
@@ -190,6 +196,12 @@ void Node::start(){
         frame_to_send->setFrameType(2);
         current_error=sender_buffer_codes[i];
         frame_to_send=applyError(frame_to_send,sender_buffer_codes[i]);
+        double delayTime=0;
+        if (sender_buffer_codes[i][3]=='1')
+        {
+             delayTime = frame_to_send->par("delay").doubleValue();
+
+        }
         if (frame_to_send ==nullptr) //the frame is lost
         {
         EV<<"At time ["<<time<<"], Node["<<senderID<<"] [lost] frame "<<endl;
@@ -199,10 +211,9 @@ void Node::start(){
         //ackno
         next_frame_to_send++;
         //supposed to get handled in apply error , assume no errors
-        double time=simTime().dbl()+getParentModule()->par("PT").doubleValue()*(i+1);
+        double time=simTime().dbl()+getParentModule()->par("PT").doubleValue()*(i+1)+delayTime;
         EV<<i<<": "<<sender_buffer[i]<<"at time:"<<time<<"\n";
         EV<<"At time ["<<time<<"], Node["<<senderID<<"] [sent] frame and payload=["<< (frame_to_send->getPayload())<<"]"<<endl;
-
         sendDelayed(frame_to_send,time, "out");
         Frame_Base*  temp_frame = frame_to_send->dup();
         timeouts.push_back(temp_frame);
@@ -278,7 +289,7 @@ Frame_Base* Node::applyError(Frame_Base *msg, std::string code_error) {
     if (code_error[1] == '1') { // Loss
         EV << ", Modified [-1], Lost [Yes], Duplicate [0], Delay [0]." << endl;
         return nullptr;
-    } else if (code_error[0] == '1') { // Modification
+    } else {if (code_error[0] == '1') { // Modification
         // Duplicate and modify the frame
         Frame_Base* modified_frame = msg->dup();
         std::string payload = modified_frame->getPayload();
@@ -322,15 +333,24 @@ Frame_Base* Node::applyError(Frame_Base *msg, std::string code_error) {
 
     } else if (code_error[2] == '1') { // Duplication
         double DD = getParentModule()->par("DD").doubleValue();
+        double PT = getParentModule()->par("PT").doubleValue();
+        double time=simTime().dbl();
         Frame_Base* duplicated_msg = msg->dup();
-
-        scheduleAt(simTime() + DD, duplicated_msg);
-        EV << ", Modified [-1], Lost [No], Duplicate [1], Delay [0]." << endl;
+        cMessage *convertedMsg = dynamic_cast<cMessage*>(duplicated_msg);
+        convertedMsg->setName("messssssssage dup");
+        EV<<"duplicate message"<<endl;
+        sendDelayed(convertedMsg, time+DD+PT, "out"); //will be sent after the original message
+        EV << ", Modified [-1], Lost [No], Duplicate [1], Delay [0]."<<"at time "<<time+DD+PT << endl;
+        Frame_Base* tempMsg2 = msg->dup();
+        return tempMsg2;
 
     } else if (code_error[3] == '1') { // Delay
         double delayTime = getParentModule()->par("ED").doubleValue();
-        scheduleAt(simTime() + delayTime, msg);
+        msg->addPar("delay").setDoubleValue(delayTime);
+
         EV << ", Modified [-1], Lost [No], Duplicate [0], Delay [" << delayTime << "]." << endl;
+        return msg;
+    }
     }
 
     return msg;
