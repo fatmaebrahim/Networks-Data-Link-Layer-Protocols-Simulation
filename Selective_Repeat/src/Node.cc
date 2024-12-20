@@ -164,7 +164,7 @@ void Node::receiveFrame(cMessage *msg){
     int received_seq=received->getHeader();
     EV<<"received seq_no: "<<received_seq<<" expected seq_no: "<<frame_expected<<"\n";
 
-    if(received_seq!=frame_expected && no_nack)
+    if(arrived[received_seq%WS]==false &&received_seq!=frame_expected && no_nack)
     {
         if (! isAckLost()){
         //send nack or ack or silent
@@ -220,9 +220,11 @@ void Node::sendFrame(cMessage *msg){
 //    EV << "send:" << sender_start_index<<"  end:"<<sender_end_index<<"  to_send:" <<next_frame_to_send<<"\n";
     int ackno= received->getAck_nack_number();
     //slide window
-    while (sender_buffer[sender_start_index]->getHeader()!= received->getAck_nack_number()) {
+
+    while (sender_buffer[sender_start_index]->getHeader()< received->getAck_nack_number()) {
 
         EV<<"Cancel event at time: " <<simTime().dbl()<<"\n";
+        EV << "send:" << sender_start_index<<"  end:"<<sender_end_index<<"  ackno:" <<ackno<<"\n";
         cancelEvent(timeouts[sender_start_index]);
         sender_start_index++;
         if(sender_end_index<sender_buffer.size()-1){
@@ -230,11 +232,12 @@ void Node::sendFrame(cMessage *msg){
          }
     }
 
+
     //send frames in the new window
 
     int index=0;
 //    EV<<"next frame to send:"<<next_frame_to_send<<" sender end index:"<<sender_end_index<<"\n";
-    for (int i = next_frame_to_send; i<sender_end_index; i++){
+    for (int i = next_frame_to_send; i<=sender_end_index && i<sender_buffer.size(); i++){
 
         flag_timout=false;
         flag_nack=false;
@@ -252,13 +255,13 @@ void Node::sendFrame(cMessage *msg){
 
                }
         next_frame_to_send++;
-        double time=simTime().dbl()+getParentModule()->par("PT").doubleValue()*(i+1)+delayTime;
+        double time=simTime().dbl()+getParentModule()->par("PT").doubleValue()*(index+1)+delayTime;
         EV<<"send"<<" seq_no: "<<frame_to_send->getHeader()<<" at time:"<<time<<"\n";
         sendDelayed(frame_to_send,time, "out");
         Frame_Base*  temp_frame = frame_to_send->dup();
         timeouts.push_back(temp_frame);
         //add TO to handle timeout where it will send a message to itself at timeouts
-        time=simTime().dbl()+getParentModule()->par("PT").doubleValue()*(i+1)+ getParentModule()->par("TO").doubleValue();
+        time=simTime().dbl()+getParentModule()->par("PT").doubleValue()*(index+1)+ getParentModule()->par("TO").doubleValue();
         EV<<"timeout: "<<" seq_no: "<<frame_to_send->getHeader()<<" at time:"<<time<<"\n";
         scheduleAt(time,temp_frame);
         index++;
@@ -273,7 +276,7 @@ void Node::sendFrame(cMessage *msg){
 void Node::start(){
     EV<<"Node:"<<senderID<<" is sending"<<"\n";
 
-    for (int i = sender_start_index; i<sender_end_index; i++){
+    for (int i = sender_start_index; i<=sender_end_index; i++){
 
         flag_timout=false;
         flag_nack=false;
