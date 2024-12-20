@@ -1,0 +1,24 @@
+At time [0.5],Node[0], Introducing channel error with code =[0000]
+hellooooooooooooooooooooooooo
+At time [0.5],Node[0] sent frame with seq_num=[0] and payload=[$Sherlock Holmes is a fictional detective	] and trailer=[0100] At time [1],Node[0], Introducing channel error with code =[0000]
+hellooooooooooooooooooooooooo
+At time [1],Node[0] sent frame with seq_num=[1] and payload=[$created by British author/$ Sir Arthur Conan Doyle.	] and trailer=[0000] At time [1.5],Node[0], Introducing channel error with code =[0000]
+hellooooooooooooooooooooooooo
+At time [1.5],Node[0] sent frame with seq_num=[2] and payload=[$Referring to himself as a// "consulting detective" in the stories,	] and trailer=[0100] At time [2],Node[0], Introducing channel error with code =[0000]
+hellooooooooooooooooooooooooo
+At time [2],Node[0] sent frame with seq_num=[3] and payload=[$Holmes is known for his proficiency with observation,	] and trailer=[0010] At time [2],Node[1] Sending [ACK] with number [1] ,loss [No].
+At time [2.5],Node[1] Sending [ACK] with number [2] ,loss [No].
+At time [3],Node[1] Sending [ACK] with number [3] ,loss [No].
+At time [3.5],Node[1] Sending [ACK] with number [4] ,loss [No].
+At time [2.5],Node[0], Introducing channel error with code =[0000]
+hellooooooooooooooooooooooooo
+At time [2.5],Node[0] sent frame with seq_num=[4] and payload=[$deduction, forensic science,	] and trailer=[0001] At time [3],Node[0], Introducing channel error with code =[0000]
+hellooooooooooooooooooooooooo
+At time [3],Node[0] sent frame with seq_num=[5] and payload=[$and// logical reasoning/$ that borders on the fantastic,	] and trailer=[0010] At time [3.5],Node[0], Introducing channel error with code =[0000]
+hellooooooooooooooooooooooooo
+At time [3.5],Node[0] sent frame with seq_num=[6] and payload=[$which he employs when investigating cases for a wide variety of clients,	] and trailer=[0101] At time [4],Node[0], Introducing channel error with code =[0000]
+hellooooooooooooooooooooooooo
+At time [4],Node[0] sent frame with seq_num=[7] and payload=[$including Scotland Yard.	] and trailer=[0111] At time [4],Node[1] Sending [ACK] with number [5] ,loss [No].
+At time [4.5],Node[1] Sending [ACK] with number [6] ,loss [No].
+At time [5],Node[1] Sending [ACK] with number [7] ,loss [No].
+At time [5.5],Node[1] Sending [ACK] with number [0] ,loss [No].
