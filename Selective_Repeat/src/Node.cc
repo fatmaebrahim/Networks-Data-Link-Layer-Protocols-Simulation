@@ -108,7 +108,7 @@ void Node::handleMessage(cMessage *msg)
         else  if (received->getFrameType()==0){
                //send
 //            EV << "notack: " << received->getName() << endl;
-            receiveFrame(received);
+//            receiveFrame(received);
 
         }
     }
@@ -226,17 +226,21 @@ void Node::sendFrame(cMessage *msg){
 //    EV << "send:" << sender_start_index<<"  end:"<<sender_end_index<<"  to_send:" <<next_frame_to_send<<"\n";
     int ackno= received->getAck_nack_number();
     //slide window
-
-    while (sender_buffer[sender_start_index]->getHeader()< received->getAck_nack_number()) {
+    std::string canceled="";
+    EV<<"sender_start_index "<<sender_start_index<<endl;
+    while (sender_buffer[sender_start_index]->getHeader() != received->getAck_nack_number()) {
 
         EV<<"Cancel event at time: " <<simTime().dbl()<<"\n";
         EV << "send:" << sender_start_index<<"  end:"<<sender_end_index<<"  ackno:" <<ackno<<"\n";
         cancelEvent(timeouts[sender_start_index]);
-        sender_start_index++;
+        sender_start_index=inc(sender_start_index);
         if(sender_end_index<sender_buffer.size()-1){
-           sender_end_index++;
+           sender_end_index=inc(sender_end_index);
          }
+        canceled+=std::to_string(sender_start_index);
+
     }
+    EV<<"the canceled frames are "<<canceled<<endl;
 
 
     //send frames in the new window
@@ -492,6 +496,7 @@ void Node:: prepareMessages()
     //TODO
 
             std::vector<std::string> payloads = readFile(path);
+            std::cout<<"size of messsages"<<payloads.size()<<endl;
 
             for (int i=0 ;i<payloads.size();i++) {
 
