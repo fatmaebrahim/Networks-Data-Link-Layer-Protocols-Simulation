@@ -1,8 +1,8 @@
 version 3
-run General-0-20241211-03:08:17-30324
+run General-0-20241220-02:32:09-19824
 attr configname General
-attr datetime 20241211-03:08:17
-attr datetimef 20241211-030817
+attr datetime 20241220-02:32:09
+attr datetimef 20241220-023209
 attr experiment General
 attr inifile omnetpp.ini
 attr iterationvars ""
@@ -10,45 +10,7 @@ attr iterationvarsd ""
 attr iterationvarsf ""
 attr measurement ""
 attr network selective_repeat.Network
-attr processid 30324
-attr repetition 0
-attr replication #0
-attr resultdir results
-attr runnumber 0
-attr seedset 0
-config network selective_repeat.Network
-
-par Network.node0.Port$o.channel typename "\"ned.IdealChannel\""
-par Network.coordinator.ports$o[0].channel typename "\"ned.IdealChannel\""
-par Network.node1.Port$o.channel typename "\"ned.IdealChannel\""
-par Network.coordinator.ports$o[1].channel typename "\"ned.IdealChannel\""
-par Network.node1.out.channel typename "\"ned.IdealChannel\""
-par Network.node0.out.channel typename "\"ned.IdealChannel\""
-par Network.coordinator typename "\"selective_repeat.Coordinator\""
-par Network.node0 typename "\"selective_repeat.Node\""
-par Network.node1 typename "\"selective_repeat.Node\""
-par Network typename "\"selective_repeat.Network\""
-par Network WS 4
-par Network SN 7
-par Network TO 10
-par Network PT 0.5
-par Network TD 1
-par Network ED 4
-par Network DD 1
-par Network LP 0
-
-run General-0-20241211-03:09:28-28804
-attr configname General
-attr datetime 20241211-03:09:28
-attr datetimef 20241211-030928
-attr experiment General
-attr inifile omnetpp.ini
-attr iterationvars ""
-attr iterationvarsd ""
-attr iterationvarsf ""
-attr measurement ""
-attr network selective_repeat.Network
-attr processid 28804
+attr processid 19824
 attr repetition 0
 attr replication #0
 attr resultdir results

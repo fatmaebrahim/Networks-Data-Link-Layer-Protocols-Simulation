@@ -18,12 +18,14 @@
 Define_Module(Node);
 //Sender variable
 int WS;
+int SN;
 int sender_start_index=0;
 int sender_end_index;
 int sender_index=0;
 std::vector<Frame_Base*> sender_buffer;
 std::vector<std::string> sender_buffer_codes;
 std::vector<Frame_Base*> timeouts;
+int seq_no=0;
 int ack_expected=0;
 int next_frame_to_send=0;
 bool no_nack=true;
@@ -32,8 +34,9 @@ bool no_nack=true;
 int receiver_start_index=0;
 int receiver_end_index;
 int receiver_index=0;
-std::vector<Frame_Base*> receiver_buffer;
-std::vector<bool> arrived;
+
+std::vector<Frame_Base*> ack_timeouts;
+
 int frame_expected=0;
 Frame_Base* frame;
 int senderID;
@@ -52,8 +55,11 @@ void Node::initialize()
 {
     // TODO - Generated method body
     WS=this->getParentModule()->par("WS").intValue();
+    SN =this->getParentModule()->par("SN").intValue();
     receiver_end_index=WS-1;
     sender_end_index=WS-1;
+    arrived.resize(WS, false);
+    receiver_buffer.resize(WS);
 
 }
 
@@ -69,7 +75,7 @@ void Node::handleMessage(cMessage *msg)
     if(strcmp(msg->getName(),"0")==0){
         EV << "Received a message: " << msg->getName() << endl;
         //message from coordinator
-        path= "../simulations/inputs/input0.txt";
+        path= "../simulations/inputs/input2.txt";
         prepareMessages();
         senderID=0;
         start();
@@ -95,12 +101,13 @@ void Node::handleMessage(cMessage *msg)
         }
         else  if (received->getFrameType()==1){
             //send
-            EV << "ack: " << received->getAck_nack_number() << endl;
+            EV<<"Node:"<<senderID<<" is receiving"<<"\n";
+//            EV << "ack: " << received->getAck_nack_number() << endl;
             sendFrame(received);
         }
         else  if (received->getFrameType()==0){
                //send
-            EV << "notack: " << received->getName() << endl;
+//            EV << "notack: " << received->getName() << endl;
 
         }
     }
@@ -124,32 +131,116 @@ std::string binaryToString(const std::string& binary) {
     }
     return result;
 }
+
+bool Node:: isBetween(int frame_expected, int received_seq){
+    if (frame_expected<=received_seq && received_seq< receiver_end_index)
+        return true;
+    if (receiver_end_index<frame_expected && frame_expected<=received_seq)
+        return true;
+    if (received_seq< receiver_end_index && receiver_end_index<frame_expected)
+        return true;
+    return false;
+}
+
+int Node:: inc(int seq_no){
+    return (seq_no+1)%SN;
+}
+
+bool Node:: isAckLost(){
+    double loss_prob = getParentModule()->par("LP").doubleValue();
+    double random_prob = (double)rand() / RAND_MAX;
+    return false;
+//    return random_prob < loss_prob;
+
+
+}
+
+
+
+void Node::receiveFrame(cMessage *msg){
+    Frame_Base* received = dynamic_cast<Frame_Base*>(msg);
+    EV << "start:" << receiver_start_index<<"  end:"<< receiver_end_index<<"\n";
+    //if receiver.seqno is inside the window of the receiver
+    int received_seq=received->getHeader();
+    EV<<"received seq_no: "<<received_seq<<" expected seq_no: "<<frame_expected<<"\n";
+
+    if(received_seq!=frame_expected && no_nack)
+    {
+        if (! isAckLost()){
+        //send nack or ack or silent
+        Frame_Base* nack_to_send = new Frame_Base;
+        nack_to_send->setFrameType(0);
+        nack_to_send->setAck_nack_number(frame_expected);
+        double time=simTime().dbl()+getParentModule()->par("PT").doubleValue()+getParentModule()->par("TD").doubleValue();
+        sendDelayed(nack_to_send,time, "out");
+        EV<<"sending nack:"<<nack_to_send->getAck_nack_number()<<" at time:"<<time<<"\n";
+        }
+
+    }
+
+
+    //if already received igonre
+    if(arrived[received_seq%WS]==false && isBetween(frame_expected , received_seq))
+    {
+
+            arrived[received_seq%WS]=true;
+            receiver_buffer[frame_expected]=received->dup();
+//            if(verifyCRC(received->getPayload(),"polynomial"))
+            {
+                while(arrived[frame_expected%WS])
+                {
+                    no_nack=true;
+                    arrived[frame_expected%WS]=false;
+                    frame_expected=inc(frame_expected);
+                    receiver_end_index=inc(receiver_end_index);
+                    receiver_start_index=inc(receiver_start_index);
+                    //reset ack timer
+                }
+
+            }
+
+            if ( frame_expected== receiver_start_index && ! isAckLost()){
+
+                Frame_Base* ack_to_send = new Frame_Base;
+                ack_to_send->setFrameType(1);
+                ack_to_send->setAck_nack_number(frame_expected);
+                double time=simTime().dbl()+getParentModule()->par("PT").doubleValue()+getParentModule()->par("TD").doubleValue();
+                sendDelayed(ack_to_send,time, "out");
+                EV<<"sending ack:"<<ack_to_send->getAck_nack_number()<<" at time:"<<time<<"\n";
+            }
+
+
+    }
+}
+
+
+
 void Node::sendFrame(cMessage *msg){
     Frame_Base* received = dynamic_cast<Frame_Base*>(msg);
-    EV << "start:" << sender_start_index<<"  end:"<<sender_end_index<<"  to_send:" <<next_frame_to_send<<"\n";
+//    EV << "send:" << sender_start_index<<"  end:"<<sender_end_index<<"  to_send:" <<next_frame_to_send<<"\n";
     int ackno= received->getAck_nack_number();
     //slide window
     while (sender_buffer[sender_start_index]->getHeader()!= received->getAck_nack_number()) {
-        //mark other frames as sent to stop their timers --todo
-        EV<<timeouts.size()<<"\n";
+
+        EV<<"Cancel event at time: " <<simTime().dbl()<<"\n";
         cancelEvent(timeouts[sender_start_index]);
         sender_start_index++;
-        if(sender_end_index<WS-1){
+        if(sender_end_index<sender_buffer.size()-1){
            sender_end_index++;
          }
     }
 
     //send frames in the new window
-    EV<<"Node:"<<senderID<<" is sending"<<"\n";
-    int index=0;
 
-    for (int i = next_frame_to_send; i<=sender_end_index; i++){
+    int index=0;
+//    EV<<"next frame to send:"<<next_frame_to_send<<" sender end index:"<<sender_end_index<<"\n";
+    for (int i = next_frame_to_send; i<sender_end_index; i++){
 
         flag_timout=false;
         flag_nack=false;
         Frame_Base* frame_to_send = sender_buffer[i]->dup();
         frame_to_send=sender_buffer[i];
-        frame_to_send->setFrameType(2);
+
         current_error=sender_buffer_codes[i];
         frame_to_send=applyError(frame_to_send,sender_buffer_codes[i]);
         if (frame_to_send ==nullptr) //the frame is lost
@@ -160,25 +251,20 @@ void Node::sendFrame(cMessage *msg){
                     delayTime = frame_to_send->par("delay").doubleValue();
 
                }
-        //seqno
-        //ackno
         next_frame_to_send++;
-        //supposed to get handled in apply error , assume no errors
         double time=simTime().dbl()+getParentModule()->par("PT").doubleValue()*(i+1)+delayTime;
-        EV<<i<<": "<<sender_buffer[i]<<"at time:"<<time<<"\n";
+        EV<<"send"<<" seq_no: "<<frame_to_send->getHeader()<<" at time:"<<time<<"\n";
         sendDelayed(frame_to_send,time, "out");
         Frame_Base*  temp_frame = frame_to_send->dup();
         timeouts.push_back(temp_frame);
         //add TO to handle timeout where it will send a message to itself at timeouts
-        scheduleAt(simTime()+getParentModule()->par("PT").doubleValue()*(index+1)+ getParentModule()->par("TO").doubleValue(),temp_frame);
+        time=simTime().dbl()+getParentModule()->par("PT").doubleValue()*(i+1)+ getParentModule()->par("TO").doubleValue();
+        EV<<"timeout: "<<" seq_no: "<<frame_to_send->getHeader()<<" at time:"<<time<<"\n";
+        scheduleAt(time,temp_frame);
         index++;
     }
 
 
-
-}
-
-void Node::receiveFrame(cMessage *msg){
 
 }
 
@@ -187,13 +273,13 @@ void Node::receiveFrame(cMessage *msg){
 void Node::start(){
     EV<<"Node:"<<senderID<<" is sending"<<"\n";
 
-    for (int i = sender_start_index; i<=sender_end_index; i++){
-        EV<<i<<": "<<sender_buffer[i]<<"\n";
+    for (int i = sender_start_index; i<sender_end_index; i++){
+
         flag_timout=false;
         flag_nack=false;
         Frame_Base* frame_to_send = new Frame_Base;
         frame_to_send = sender_buffer[i]->dup();
-        frame_to_send->setFrameType(2);
+
         current_error=sender_buffer_codes[i];
         frame_to_send=applyError(frame_to_send,sender_buffer_codes[i]);
         double delayTime=0;
@@ -207,84 +293,22 @@ void Node::start(){
         EV<<"At time ["<<time<<"], Node["<<senderID<<"] [lost] frame "<<endl;
               continue;
         }
-        //seqno
-        //ackno
         next_frame_to_send++;
-        //supposed to get handled in apply error , assume no errors
         double time=simTime().dbl()+getParentModule()->par("PT").doubleValue()*(i+1)+delayTime;
-        EV<<i<<": "<<sender_buffer[i]<<"at time:"<<time<<"\n";
-        EV<<"At time ["<<time<<"], Node["<<senderID<<"] [sent] frame and payload=["<< (frame_to_send->getPayload())<<"]"<<endl;
+        EV<<"start:"<<i<<"seq_no: "<<frame_to_send->getHeader()<<" at time:"<<time<<"\n";
         sendDelayed(frame_to_send,time, "out");
         Frame_Base*  temp_frame = frame_to_send->dup();
         timeouts.push_back(temp_frame);
+        time=simTime().dbl()+getParentModule()->par("PT").doubleValue()*(i+1)+ getParentModule()->par("TO").doubleValue();
+        EV<<"timeout: "<<" seq_no: "<<frame_to_send->getHeader()<<" at time:"<<time<<"\n";
+
         //add TO to handle timeout where it will send a message to itself at timeouts
-        scheduleAt(simTime()+getParentModule()->par("PT").doubleValue()*(i+1)+ getParentModule()->par("TO").doubleValue(),temp_frame);
+        scheduleAt(time,temp_frame);
     }
 
 
 }
-//[Modification, Loss, Duplication, Delay]
 
-//Frame_Base*Node:: applyError(Frame_Base *msg,std::string code_error){
-//    //apply error on msg using current_error
-//        /*
-//         * At time [.. starting sending time after processing….. ], Node[id] [sent] frame with
-//        seq_num=[..] and payload=[ ….. in characters after modification….. ] and trailer=[ …….in
-//        bits….. ] , Modified [-1 for no modification, otherwise the modified bit number] , Lost
-//        [Yes/No], Duplicate [0 for none, 1 for the first version, 2 for the second version], Delay [0
-//        for no delay , otherwise the error delay interval]. */
-//    if (code_error[1]=='1') //Loss as it will dominate the frame is lost and that is it
-//        {
-//            /*"At time[" << simTime()+getParentModule()->par("PT").doubleValue()*(i+1) << "], Node["<<senderID<<"] sent frame with seq_num=["<< transmittedMsg->getSeqNumber() <<"] and payload=["<< transmittedMsg->getPayload()<<"]"<<
-//                    " and trailer=["<< toBinary(transmittedMsg->getParity())<<"]" << "Modified [" << modified << "]" << "Lost [" << lost << "]" << ", Duplicate [" << duplicate << "], Delay [" << eD << "]"<< endl;*/
-//            EV<<", Modified [-1] , Lost [Yes], Duplicate [0], Delay [0]."<<endl;
-//            return nullptr;
-//
-//        }
-//    else if(code_error[0]=='1') // Modification
-//    {
-//            Frame_Base* modified_frame=new Frame_Base;
-//            modified_frame=msg->dup();
-//            int modified_bit = int(uniform(0,  std::string(modified_frame->getPayload()).size())); // Assuming 8 bits per character
-//            EV<<"The size of the string is "<<std::string(modified_frame->getPayload()).size()<<endl;
-//            std::string payload = modified_frame->getPayload();
-//            std::string binaryPayload = stringToBinary(payload);
-//            EV<<"Binary payload before is "<<binaryPayload[modified_bit]<<endl;
-//            binaryPayload[modified_bit] = (binaryPayload[modified_bit] == '0') ? '1' : '0';
-//            EV<<"Binary payload after is "<<binaryPayload[modified_bit]<<endl;
-//
-////            std::string modifiedPayload = binaryToString(binaryPayload);
-//            modified_frame->setPayload(binaryPayload.c_str());
-//
-//            EV << "Modified bit: " << modified_bit
-//               << " | Original payload: " << payload
-//               << " | Modified payload: " << binaryPayload << endl;
-//
-//            // Set the modification log
-//            EV << "Modified [" << modified_bit << "] , Lost [No], Duplicate [0], Delay [0]." << endl;
-//            return modified_frame;
-//
-//
-//    } else if (code_error[2]=='1')//Duplication
-//    {
-//        //NOT Complete
-//        double DD = getParentModule()->par("DD").doubleValue();
-//        Frame_Base*  duplicated_msg= msg->dup();
-//
-//        scheduleAt(simTime()+DD,duplicated_msg);
-//
-//
-//    }else if (code_error[3]=='1')//Delay
-//    {
-//        double delayTime=getParentModule()->par("ED").doubleValue();
-//        scheduleAt(simTime() + delayTime, msg);
-//        EV << ", Modified [-1] , Lost [Yes], Duplicate [0], Delay ["<<delayTime<<"]." << endl;
-//
-//    }
-//    //see if the codes
-//    return msg;
-//    //ToDo
-//}
 Frame_Base* Node::applyError(Frame_Base *msg, std::string code_error) {
     if (code_error[1] == '1') { // Loss
         EV << ", Modified [-1], Lost [Yes], Duplicate [0], Delay [0]." << endl;
@@ -459,13 +483,18 @@ void Node:: prepareMessages()
     //TODO
 
             std::vector<std::string> payloads = readFile(path);
-            Frame_Base* frame = new Frame_Base;
+
             for (int i=0 ;i<payloads.size();i++) {
+
                 std::string framed = framing(payloads[i]);
                 std::string polynomial = "1101";
                 std::string binaryMessage = stringToBinary(framed);
                 std::string messageWithCRC = calculateCRC(binaryMessage, polynomial);
+                Frame_Base* frame = new Frame_Base;
                 frame->setPayload(messageWithCRC.c_str());
+                frame->setFrameType(2);
+                frame->setHeader(seq_no);
+                seq_no=inc(seq_no);
                 sender_buffer.push_back(frame);
             }
 

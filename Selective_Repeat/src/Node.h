@@ -37,6 +37,9 @@ public:
     void sendFrame(cMessage *msg);
     void prepareMessages();
     void start();
+    bool isAckLost();
+    int inc(int seq_no);
+    bool isBetween(int frame_expected, int received_seq);
     Frame_Base* applyError(Frame_Base* msg,std::string code_error);
     std::string calculateCRC(const std::string& input, const std::string& polynomial);
     bool verifyCRC(const std::string& receivedMessage, const std::string& polynomial);
@@ -45,6 +48,9 @@ public:
     std::string deframing(std::string frame);
     std::vector<std::string> readFile(const std::string& path);
     std::string path ;
+
+    std::vector<Frame_Base*> receiver_buffer;
+    std::vector<bool> arrived;
   protected:
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;
