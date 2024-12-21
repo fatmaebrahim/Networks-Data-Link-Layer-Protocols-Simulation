@@ -77,7 +77,7 @@ void Node::handleMessage(cMessage *msg)
     if(strcmp(msg->getName(),"0")==0){
         EV << "Received a message: " << msg->getName() << endl;
         //message from coordinator
-        path= "../simulations/inputs/input0.txt";
+        path= "../simulations/inputs/input2.txt";
         prepareMessages();
         senderID=0;
         start();
@@ -297,7 +297,7 @@ void Node::sendFrame(cMessage *msg){
     //slide window
     std::string canceled="";
 //    EV<<"sender_start_index "<<sender_start_index<<endl;
-    while (sender_start_index<sender_buffer.size()-1&& sender_buffer[sender_start_index]->getHeader() != received->getAck_nack_number()) {
+    while (sender_start_index<sender_buffer.size()&& sender_buffer[sender_start_index]->getHeader() != received->getAck_nack_number()) {
         EV<<"Cancel event at time: " <<simTime().dbl()<<"\n";
         EV << "send:" << sender_start_index<<"  end:"<<sender_end_index<<"  ackno:" <<ackno<<"\n";
         EV<<"canceled event: "<<timeouts[sender_start_index%WS]->getHeader()<<"\n";
@@ -313,10 +313,10 @@ void Node::sendFrame(cMessage *msg){
     }
     EV<<"the canceled frames are "<<canceled<<endl;
 
-    if (sender_start_index==sender_start_index && !isBetween(sender_start_index , next_frame_to_send,sender_start_index)){
-        cancelEvent(timeouts[sender_start_index%WS]);
-        EV<<"canceled event: "<<timeouts[sender_start_index%WS]->getHeader()<<"\n";
-    }
+//    if (sender_start_index==sender_start_index && !isBetween(sender_start_index , next_frame_to_send,sender_start_index)){
+//        cancelEvent(timeouts[sender_start_index%WS]);
+//        EV<<"canceled event: "<<timeouts[sender_start_index%WS]->getHeader()<<"\n";
+//    }
 
     //send frames in the new window
 
