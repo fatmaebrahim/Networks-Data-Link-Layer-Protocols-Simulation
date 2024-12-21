@@ -51,7 +51,6 @@ bool flag_nack;
 std::string current_error;
 std::string polynomial = "1101";
 std::ofstream output("output.txt");
-Frame_Base* ack_timer =nullptr ;
 
 void Node::initialize()
 {
@@ -194,7 +193,7 @@ void Node::receiveNack(cMessage *msg){
      std::string message_only=messageWithCRC.substr(0,(messageWithCRC.size()-polynomial.size()-1) );
      std::string crc_only=messageWithCRC.substr((messageWithCRC.size()-polynomial.size()),messageWithCRC.size() );
      output<<"At time ["<<time+simTime().dbl()<<"],Node["<<senderID<<"], Introducing channel error with code =["<<current_error<<"]"<<"\n";
-     output<<"nackkkkkkkkkkkkkkkkkkkkkkkkk"<<"\n";
+//     output<<"nackkkkkkkkkkkkkkkkkkkkkkkkk"<<"\n";
      output<<"At time ["<<time+simTime().dbl()<<"],Node["<<senderID<<"] sent frame with seq_num=["<<frame_to_send->getHeader()<<"] and payload=["<<binaryToString(message_only.c_str())<<"] and trailer=["<<crc_only<<"] ";
      EV<<"At time ["<<time+simTime().dbl()<<"],Node["<<senderID<<"] sent frame with seq_num=["<<frame_to_send->getHeader()<<"] and payload=["<<binaryToString(message_only.c_str())<<"] and trailer=["<<crc_only<<"] ";
 
@@ -242,6 +241,8 @@ void Node::receiveFrame(cMessage *msg){
 //        EV<<"sending nack:"<<nack_to_send->getAck_nack_number()<<" at time:"<<time<<"\n";
 
         EV<<"At time ["<<time+ simTime().dbl()<<"],Node["<<1-senderID<<"] Sending [NACK] with number ["<<nack_to_send->getAck_nack_number()<<"] ,loss [No]."<<"\n";
+        output<<"At time ["<<time+ simTime().dbl()<<"],Node["<<1-senderID<<"] Sending [NACK] with number ["<<nack_to_send->getAck_nack_number()<<"] ,loss [No]."<<"\n";
+
 
         }
         else{
@@ -252,12 +253,7 @@ void Node::receiveFrame(cMessage *msg){
 
         }
         no_nack=false;
-        ack_timer= new Frame_Base;
-        ack_timer = nack_to_send->dup();
-        EV<<"acktimer: "<<ack_timer->getHeader()<<"\n";
 
-        time=simTime().dbl()+getParentModule()->par("PT").doubleValue()+ getParentModule()->par("TO").doubleValue();
-        scheduleAt(time,ack_timer);
 
     }
 
@@ -306,10 +302,6 @@ void Node::receiveFrame(cMessage *msg){
               //
                     receiver_start_index=inc(receiver_start_index);
                     //reset ack timer
-                    if (ack_timer!=nullptr&& ack_timer->getAck_nack_number()==received_seq){
-                          EV<<"canceled event: "<<ack_timer->getHeader()<<"\n";
-                          cancelEvent(ack_timer);
-                     }
 
                     EV<<"New frame expected "<< frame_expected<<" , "<<receiver_start_index<<" , "<<receiver_end_index<<"\n";
                     EV<<"arrived: ";
@@ -335,12 +327,6 @@ void Node::receiveFrame(cMessage *msg){
                       EV<<"At time ["<<time+ simTime().dbl()<<"],Node["<<1-senderID<<"] Sending [ACK] with number ["<<ack_to_send->getAck_nack_number()<<"] ,loss [No]."<<"\n";
 
 
-
-                      ack_timer = ack_to_send->dup();
-                      EV<<"acktimeout: "<<ack_timer->getHeader()<<"\n";
-
-                      time=simTime().dbl()+getParentModule()->par("PT").doubleValue()+ getParentModule()->par("TO").doubleValue();
-                      scheduleAt(time,ack_timer);
 
                  }
 
