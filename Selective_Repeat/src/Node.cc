@@ -77,7 +77,7 @@ void Node::handleMessage(cMessage *msg)
     if(strcmp(msg->getName(),"0")==0){
         EV << "Received a message: " << msg->getName() << endl;
         //message from coordinator
-        path= "../simulations/inputs/input0.txt";
+        path= "../simulations/inputs/input2.txt";
         prepareMessages();
         senderID=0;
         start();
@@ -137,7 +137,7 @@ std::string binaryToString(const std::string& binary) {
     return result;
 }
 
-//                                  7               7              1
+//                                  4              0              7
 bool Node:: isBetween(int frame_expected, int received_seq, int receiver_end_index){
     if (frame_expected<=received_seq && received_seq<= receiver_end_index)
         return true;
@@ -151,6 +151,11 @@ bool Node:: isBetween(int frame_expected, int received_seq, int receiver_end_ind
 int Node:: inc(int seq_no){
     return (seq_no+1)%(SN+1);
 }
+
+int Node:: dec(int seq_no){
+    return (seq_no-1)%(SN+1);
+}
+
 int Node:: incWS(int seq_no){
     return (seq_no+1)%(WS);
 }
@@ -217,7 +222,7 @@ void Node::receiveFrame(cMessage *msg){
         EV<<arrived[i]<<",";
     }
    EV<<"\n";
-    if(arrived[received_seq%(SN+1)]==false &&(received_seq)!=(frame_expected) && no_nack)
+    if(arrived[received_seq%(SN+1)]==false &&(received_seq)!=(frame_expected) && no_nack &&isBetween(frame_expected , received_seq,receiver_end_index) )
     {
         EV<<"arrived: ";
         for (int i =0; i<arrived.size();i++){
@@ -253,6 +258,7 @@ void Node::receiveFrame(cMessage *msg){
         EV<<arrived[i]<<",";
     }
    EV<<"\n";
+   EV<<"arrived isbetween"<<arrived[received_seq%(SN+1)]<<" , "<<isBetween(frame_expected , received_seq,receiver_end_index)<<"\n";
     if(arrived[received_seq%(SN+1)]==false && isBetween(frame_expected , received_seq,receiver_end_index))
     {
         EV<<"arrived: ";
@@ -278,42 +284,46 @@ void Node::receiveFrame(cMessage *msg){
       //                             7  0                         3 0
                 while(arrived[frame_expected%(SN+1)] && (frame_expected%WS)<receiver_buffer.size())
                 {
+
+                    no_nack=true;
+                    arrived[frame_expected%(SN+1)]=false;
+                   //    0
+                    frame_expected=inc(frame_expected);
+              //                                      2
+                    receiver_end_index=inc(receiver_end_index);
+              //
+                    receiver_start_index=inc(receiver_start_index);
+                    //reset ack timer                  0
+                    EV<<"New frame expected "<< frame_expected<<" , "<<receiver_start_index<<" , "<<receiver_end_index<<"\n";
                     EV<<"arrived: ";
                     for (int i =0; i<arrived.size();i++){
                         EV<<arrived[i]<<",";
                     }
                    EV<<"\n";
-                    no_nack=true;
-
-                   //    0
-                    frame_expected=inc(frame_expected);
-              //                                      2
-                    receiver_end_index=incWS(receiver_end_index);
-              //
-                    receiver_start_index=incWS(receiver_start_index);
-                    //reset ack timer                  0
-                    EV<<"New frame expected "<< frame_expected<<"\n";
-                    arrived[frame_expected%(SN+1)]=false;
                 }
 
 
+                EV<<"noooooooooonack"<<no_nack<<"\n";
+
+
+                 if (no_nack && ! isAckLost()){
+
+                     Frame_Base* ack_to_send = new Frame_Base;
+                     ack_to_send->setFrameType(1);
+                     ack_to_send->setAck_nack_number(frame_expected);
+                     double time=getParentModule()->par("PT").doubleValue()+getParentModule()->par("TD").doubleValue();
+                     sendDelayed(ack_to_send,time, "out");
+     //                EV<<"sending ack:"<<ack_to_send->getAck_nack_number()<<" at time:"<<simTime().dbl()+time<<"\n";
+
+                      output<<"At time ["<<time+ simTime().dbl()<<"],Node["<<1-senderID<<"] Sending [ACK] with number ["<<ack_to_send->getAck_nack_number()<<"] ,loss [No]."<<"\n";
+                      EV<<"At time ["<<time+ simTime().dbl()<<"],Node["<<1-senderID<<"] Sending [ACK] with number ["<<ack_to_send->getAck_nack_number()<<"] ,loss [No]."<<"\n";
+
+                 }
+
+
             }
-            EV<<"noooooooooonack"<<no_nack<<"\n";
 
 
-            if (no_nack && ! isAckLost()){
-
-                Frame_Base* ack_to_send = new Frame_Base;
-                ack_to_send->setFrameType(1);
-                ack_to_send->setAck_nack_number(frame_expected);
-                double time=getParentModule()->par("PT").doubleValue()+getParentModule()->par("TD").doubleValue();
-                sendDelayed(ack_to_send,time, "out");
-//                EV<<"sending ack:"<<ack_to_send->getAck_nack_number()<<" at time:"<<simTime().dbl()+time<<"\n";
-
-                 output<<"At time ["<<time+ simTime().dbl()<<"],Node["<<1-senderID<<"] Sending [ACK] with number ["<<ack_to_send->getAck_nack_number()<<"] ,loss [No]."<<"\n";
-                 EV<<"At time ["<<time+ simTime().dbl()<<"],Node["<<1-senderID<<"] Sending [ACK] with number ["<<ack_to_send->getAck_nack_number()<<"] ,loss [No]."<<"\n";
-
-            }
 
 
     }
@@ -327,12 +337,15 @@ void Node::sendFrame(cMessage *msg){
     Frame_Base* received = dynamic_cast<Frame_Base*>(msg);
   EV << "send:" << sender_start_index<<"  end:"<<sender_end_index<<"  to_send:" <<next_frame_to_send<<"\n";
     int ackno= received->getAck_nack_number();
-    int timeout_seq;
+
+    int ack_dec;
 
     for (int i =0; i < timeouts.size();i++){
-        timeout_seq=inc(timeouts[i]->getHeader());
-        if (timeout_seq==ackno){
-            EV<<"canceled event: "<<timeout_seq-1<<"\n";
+//        EV<<"timeoutssssss: "<<timeouts[i]->getHeader()<<"\n";
+        ack_dec=dec(ackno);
+        if (isBetween(sender_start_index,timeouts[i]->getHeader(),ack_dec)){
+
+            EV<<"canceled event: "<<timeouts[i]->getHeader()<<"\n";
             cancelEvent(timeouts[i]);
         }
     }
@@ -415,8 +428,7 @@ void Node::start(){
     int index=0;
     for (int i = sender_start_index; i<=sender_end_index; i++){
 
-        flag_timout=false;
-        flag_nack=false;
+
         Frame_Base* frame_to_send = new Frame_Base;
         frame_to_send = sender_buffer[i]->dup();
 

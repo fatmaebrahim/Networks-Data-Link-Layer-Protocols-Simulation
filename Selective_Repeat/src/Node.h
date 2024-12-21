@@ -40,6 +40,7 @@ public:
     void start();
     bool isAckLost();
     int inc(int seq_no);
+    int dec(int seq_no);
     int incWS(int seq_no);
     bool isBetween(int frame_expected, int received_seq,int receiver_end_index);
     Frame_Base* applyError(Frame_Base* msg,std::string code_error);
