@@ -53,7 +53,7 @@ public:
 
     std::vector<Frame_Base*> receiver_buffer;
     std::vector<bool> arrived;
-    std::vector<Frame_Base*> timeouts;
+
   protected:
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;

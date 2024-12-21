@@ -40,7 +40,7 @@ std::vector<Frame_Base*> ack_timeouts;
 int frame_expected=0;
 Frame_Base* frame;
 int senderID;
-
+std::vector<Frame_Base*> timeouts;
 
 enum event_type{frame_arrival,CRC_error,frame_timeout,ack_timeout};
 event_type event;
@@ -61,7 +61,7 @@ void Node::initialize()
     sender_end_index=WS-1;
     arrived.resize(SN+1, false);
     receiver_buffer.resize(WS);
-    timeouts.resize(WS);
+
 
 }
 
@@ -294,24 +294,33 @@ void Node::sendFrame(cMessage *msg){
     Frame_Base* received = dynamic_cast<Frame_Base*>(msg);
   EV << "send:" << sender_start_index<<"  end:"<<sender_end_index<<"  to_send:" <<next_frame_to_send<<"\n";
     int ackno= received->getAck_nack_number();
+    int timeout_seq;
+
+    for (int i =0; i < timeouts.size();i++){
+        timeout_seq=inc(timeouts[i]->getHeader());
+        if (timeout_seq==ackno){
+            EV<<"canceled event: "<<timeout_seq-1<<"\n";
+            cancelEvent(timeouts[i]);
+        }
+    }
     //slide window
     std::string canceled="";
 //    EV<<"sender_start_index "<<sender_start_index<<endl;
-    while (sender_start_index<sender_buffer.size()&& sender_buffer[sender_start_index]->getHeader() != received->getAck_nack_number()) {
-        EV<<"Cancel event at time: " <<simTime().dbl()<<"\n";
-        EV << "send:" << sender_start_index<<"  end:"<<sender_end_index<<"  ackno:" <<ackno<<"\n";
-        EV<<"canceled event: "<<timeouts[sender_start_index%WS]->getHeader()<<"\n";
-        cancelEvent(timeouts[sender_start_index%WS]);
-//        sender_start_index=inc(sender_start_index);
-        sender_start_index++;
+    while (sender_start_index<sender_buffer.size()-1&& sender_buffer[sender_start_index]->getHeader() != received->getAck_nack_number()) {
+//        EV<<"Cancel event at time: " <<simTime().dbl()<<"\n";
+//        EV << "send:" << sender_start_index<<"  end:"<<sender_end_index<<"  ackno:" <<ackno<<"\n";
+
+
+        sender_start_index=inc(sender_start_index);
+//        sender_start_index++;
         if(sender_end_index<sender_buffer.size()-1){
-//           sender_end_index=inc(sender_end_index);
-            sender_end_index++;
+          sender_end_index=inc(sender_end_index);
+//            sender_end_index++;
          }
-        canceled+=std::to_string(sender_start_index);
+//        canceled+=std::to_string(sender_start_index);
 
     }
-    EV<<"the canceled frames are "<<canceled<<endl;
+//    EV<<"the canceled frames are "<<canceled<<endl;
 
 //    if (sender_start_index==sender_start_index && !isBetween(sender_start_index , next_frame_to_send,sender_start_index)){
 //        cancelEvent(timeouts[sender_start_index%WS]);
@@ -322,7 +331,7 @@ void Node::sendFrame(cMessage *msg){
 
     int index=0;
      EV<<"next frame to send:"<<next_frame_to_send<<" sender end index:"<<sender_end_index<<"\n";
-    for (int i = next_frame_to_send; i<=sender_end_index && i<sender_buffer.size() ; i++){
+    for (int i = next_frame_to_send; i<=sender_end_index && i<sender_buffer.size()&&  isBetween(sender_start_index , next_frame_to_send,sender_end_index) ; i++){
 
         flag_timout=false;
         flag_nack=false;
@@ -339,7 +348,8 @@ void Node::sendFrame(cMessage *msg){
                     delayTime = frame_to_send->par("delay").doubleValue();
 
                }
-        next_frame_to_send++;
+//        next_frame_to_send++;
+               next_frame_to_send=inc(next_frame_to_send);
         double time=getParentModule()->par("PT").doubleValue()*(index+1)+delayTime;
         std::string messageWithCRC =frame_to_send->getPayload();
               std::string message_only=messageWithCRC.substr(0,(messageWithCRC.size()-polynomial.size()-1) );
@@ -352,8 +362,9 @@ void Node::sendFrame(cMessage *msg){
 
         sendDelayed(frame_to_send,time, "out");
         Frame_Base*  temp_frame = frame_to_send->dup();
-        EV<<"iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii "<<index<<"\n";
-        timeouts[index%WS]=temp_frame;
+        EV<<"pushed to timeouts: "<<temp_frame->getHeader()<<"\n";
+        timeouts.push_back(temp_frame);
+//        timeouts[index%WS]=temp_frame;
 
         //add TO to handle timeout where it will send a message to itself at timeouts
         time=simTime().dbl()+getParentModule()->par("PT").doubleValue()*(index+1)+ getParentModule()->par("TO").doubleValue();
@@ -404,8 +415,9 @@ void Node::start(){
 
         sendDelayed(frame_to_send,time, "out");
         Frame_Base*  temp_frame = frame_to_send->dup();
-        EV<<"\n"<<"iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii "<<i<<"\n";
-        timeouts[i%WS]=temp_frame;
+        EV<<"pushed to timeouts: "<<temp_frame->getHeader()<<"\n";
+        timeouts.push_back(temp_frame);
+//        timeouts[i%WS]=temp_frame;
 
         time=simTime().dbl()+getParentModule()->par("PT").doubleValue()*(index+1)+ getParentModule()->par("TO").doubleValue();
         EV<<"timeout: "<<" seq_no: "<<frame_to_send->getHeader()<<" at time:"<<time<<"\n";
