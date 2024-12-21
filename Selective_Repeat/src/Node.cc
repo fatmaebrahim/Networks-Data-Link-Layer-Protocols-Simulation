@@ -77,7 +77,7 @@ void Node::handleMessage(cMessage *msg)
     if(strcmp(msg->getName(),"0")==0){
         EV << "Received a message: " << msg->getName() << endl;
         //message from coordinator
-        path= "../simulations/inputs/input2.txt";
+        path= "../simulations/inputs/input0.txt";
         prepareMessages();
         senderID=0;
         start();
@@ -183,17 +183,17 @@ void Node::receiveNack(cMessage *msg){
     current_error ="0000";
 
      Frame_Base* frame_to_send = sender_buffer[nack_index]->dup();
-     frame_to_send=applyError(frame_to_send,current_error);
+//     frame_to_send=applyError(frame_to_send,current_error,0);
 
 
 
 //     next_frame_to_send++;
-     double time=getParentModule()->par("PT").doubleValue();
+     double time=getParentModule()->par("PT").doubleValue()+getParentModule()->par("TD").doubleValue();
      std::string messageWithCRC =frame_to_send->getPayload();
      std::string message_only=messageWithCRC.substr(0,(messageWithCRC.size()-polynomial.size()-1) );
      std::string crc_only=messageWithCRC.substr((messageWithCRC.size()-polynomial.size()),messageWithCRC.size() );
      output<<"At time ["<<time+simTime().dbl()<<"],Node["<<senderID<<"], Introducing channel error with code =["<<current_error<<"]"<<"\n";
-     output<<"nackkkkkkkkkkkkkkkkkkkkkkkkk"<<"\n";
+//     output<<"nackkkkkkkkkkkkkkkkkkkkkkkkk"<<"\n";
      output<<"At time ["<<time+simTime().dbl()<<"],Node["<<senderID<<"] sent frame with seq_num=["<<frame_to_send->getHeader()<<"] and payload=["<<binaryToString(message_only.c_str())<<"] and trailer=["<<crc_only<<"] ";
      EV<<"At time ["<<time+simTime().dbl()<<"],Node["<<senderID<<"] sent frame with seq_num=["<<frame_to_send->getHeader()<<"] and payload=["<<binaryToString(message_only.c_str())<<"] and trailer=["<<crc_only<<"] ";
 
@@ -224,6 +224,7 @@ void Node::receiveFrame(cMessage *msg){
    EV<<"\n";
     if(arrived[received_seq%(SN+1)]==false &&(received_seq)!=(frame_expected) && no_nack &&isBetween(frame_expected , received_seq,receiver_end_index) )
     {
+        Frame_Base* nack_to_send = new Frame_Base;
         EV<<"arrived: ";
         for (int i =0; i<arrived.size();i++){
             EV<<arrived[i]<<",";
@@ -232,7 +233,7 @@ void Node::receiveFrame(cMessage *msg){
         double time;
         if (! isAckLost()){
         //send nack or ack or silent
-        Frame_Base* nack_to_send = new Frame_Base;
+
         nack_to_send->setFrameType(0);
         nack_to_send->setAck_nack_number(frame_expected);
         time=getParentModule()->par("PT").doubleValue()+getParentModule()->par("TD").doubleValue();
@@ -240,15 +241,22 @@ void Node::receiveFrame(cMessage *msg){
 //        EV<<"sending nack:"<<nack_to_send->getAck_nack_number()<<" at time:"<<time<<"\n";
 
         EV<<"At time ["<<time+ simTime().dbl()<<"],Node["<<1-senderID<<"] Sending [NACK] with number ["<<nack_to_send->getAck_nack_number()<<"] ,loss [No]."<<"\n";
+        output<<"At time ["<<time+ simTime().dbl()<<"],Node["<<1-senderID<<"] Sending [NACK] with number ["<<nack_to_send->getAck_nack_number()<<"] ,loss [No]."<<"\n";
+
 
         }
         else{
+
+        nack_to_send->setFrameType(0);
+        nack_to_send->setAck_nack_number(frame_expected);
         EV<<"At time ["<<time+ simTime().dbl()<<"],Node["<<1-senderID<<"] Sending [NACK] with number ["<<frame_expected<<"] ,loss [Yes]."<<"\n";
 
         }
         no_nack=false;
 
+
     }
+
 
 
     EV<<arrived[received_seq%(SN+1)]<<" "<<frame_expected<<","<<received_seq<<","<<receiver_end_index<<"\n";
@@ -293,7 +301,8 @@ void Node::receiveFrame(cMessage *msg){
                     receiver_end_index=inc(receiver_end_index);
               //
                     receiver_start_index=inc(receiver_start_index);
-                    //reset ack timer                  0
+                    //reset ack timer
+
                     EV<<"New frame expected "<< frame_expected<<" , "<<receiver_start_index<<" , "<<receiver_end_index<<"\n";
                     EV<<"arrived: ";
                     for (int i =0; i<arrived.size();i++){
@@ -314,9 +323,10 @@ void Node::receiveFrame(cMessage *msg){
                      double time=getParentModule()->par("PT").doubleValue()+getParentModule()->par("TD").doubleValue();
                      sendDelayed(ack_to_send,time, "out");
      //                EV<<"sending ack:"<<ack_to_send->getAck_nack_number()<<" at time:"<<simTime().dbl()+time<<"\n";
-
                       output<<"At time ["<<time+ simTime().dbl()<<"],Node["<<1-senderID<<"] Sending [ACK] with number ["<<ack_to_send->getAck_nack_number()<<"] ,loss [No]."<<"\n";
                       EV<<"At time ["<<time+ simTime().dbl()<<"],Node["<<1-senderID<<"] Sending [ACK] with number ["<<ack_to_send->getAck_nack_number()<<"] ,loss [No]."<<"\n";
+
+
 
                  }
 
@@ -384,37 +394,20 @@ void Node::sendFrame(cMessage *msg){
 //        frame_to_send=sender_buffer[i];
 
         current_error=sender_buffer_codes[i];
-        frame_to_send=applyError(frame_to_send,sender_buffer_codes[i]);
-        if (frame_to_send ==nullptr) //the frame is lost
-            continue;
-        double delayTime=0;
-               if (sender_buffer_codes[i][3]=='1')
-               {
-                    delayTime = frame_to_send->par("delay").doubleValue();
+        applyError(frame_to_send,sender_buffer_codes[i],index);
 
-               }
+
              next_frame_to_send++;
-//               next_frame_to_send=inc(next_frame_to_send);
-        double time=getParentModule()->par("PT").doubleValue()*(index+1)+delayTime;
-        std::string messageWithCRC =frame_to_send->getPayload();
-              std::string message_only=messageWithCRC.substr(0,(messageWithCRC.size()-polynomial.size()-1) );
-              std::string crc_only=messageWithCRC.substr((messageWithCRC.size()-polynomial.size()),messageWithCRC.size() );
-             output<<"At time ["<<time+simTime().dbl()<<"],Node["<<senderID<<"], Introducing channel error with code =["<<current_error<<"]"<<"\n";
-             output<<"hellooooooooooooooooooooooooo"<<"\n";
-             output<<"At time ["<<time+simTime().dbl()<<"],Node["<<senderID<<"] sent frame with seq_num=["<<frame_to_send->getHeader()<<"] and payload=["<<binaryToString(message_only.c_str())<<"] and trailer=["<<crc_only<<"] ";
-             EV<<"At time ["<<time+simTime().dbl()<<"],Node["<<senderID<<"] sent frame with seq_num=["<<frame_to_send->getHeader()<<"] and payload=["<<binaryToString(message_only.c_str())<<"] and trailer=["<<crc_only<<"] ";
-             EV<<"send"<<" seq_no: "<<frame_to_send->getHeader()<<" at time:"<<time+simTime().dbl()<<"\n";
 
-        sendDelayed(frame_to_send,time, "out");
-        Frame_Base*  temp_frame = frame_to_send->dup();
-        EV<<"pushed to timeouts: "<<temp_frame->getHeader()<<"\n";
-        timeouts.push_back(temp_frame);
-//        timeouts[index%WS]=temp_frame;
-
-        //add TO to handle timeout where it will send a message to itself at timeouts
-        time=simTime().dbl()+getParentModule()->par("PT").doubleValue()*(index+1)+ getParentModule()->par("TO").doubleValue();
-        EV<<"timeout: "<<" seq_no: "<<frame_to_send->getHeader()<<" at time:"<<time<<"\n";
-        scheduleAt(time,temp_frame);
+//        Frame_Base*  temp_frame = frame_to_send->dup();
+//        EV<<"pushed to timeouts: "<<temp_frame->getHeader()<<"\n";
+//        timeouts.push_back(temp_frame);
+////        timeouts[index%WS]=temp_frame;
+//
+//        //add TO to handle timeout where it will send a message to itself at timeouts
+//        time=simTime().dbl()+getParentModule()->par("PT").doubleValue()*(index+1)+ getParentModule()->par("TO").doubleValue();
+//        EV<<"timeout: "<<" seq_no: "<<frame_to_send->getHeader()<<" at time:"<<time<<"\n";
+//        scheduleAt(time,temp_frame);
         index++;
     }
 
@@ -433,116 +426,139 @@ void Node::start(){
         frame_to_send = sender_buffer[i]->dup();
 
         current_error=sender_buffer_codes[i];
-        frame_to_send=applyError(frame_to_send,sender_buffer_codes[i]);
-        double delayTime=0;
-        if (sender_buffer_codes[i][3]=='1')
-        {
-             delayTime = frame_to_send->par("delay").doubleValue();
+      applyError(frame_to_send,sender_buffer_codes[i],index);
 
-        }
-        if (frame_to_send ==nullptr) //the frame is lost
-        {
-        EV<<"At time ["<<time<<"], Node["<<senderID<<"] [lost] frame "<<endl;
-              continue;
-        }
         next_frame_to_send++;
-        double time=getParentModule()->par("PT").doubleValue()*(index+1)+delayTime;
+//        double time=getParentModule()->par("PT").doubleValue()*(index+1)+delayTime;
 //        EV<<"start:"<<i<<"seq_no: "<<frame_to_send->getHeader()<<" at time:"<<time+simTime().dbl()<<"\n";
-        std::string messageWithCRC =frame_to_send->getPayload();
-        std::string message_only=messageWithCRC.substr(0,(messageWithCRC.size()-polynomial.size()-1) );
-        std::string crc_only=messageWithCRC.substr((messageWithCRC.size()-polynomial.size()),messageWithCRC.size() );
-
-        output<<"At time ["<<time+simTime().dbl()<<"],Node["<<senderID<<"], Introducing channel error with code =["<<current_error<<"]"<<"\n";
-        output<<"hellooooooooooooooooooooooooo"<<"\n";
-        output<<"At time ["<<time+simTime().dbl()<<"],Node["<<senderID<<"] sent frame with seq_num=["<<frame_to_send->getHeader()<<"] and payload=["<<binaryToString(message_only.c_str())<<"] and trailer=["<<crc_only<<"] ";
-        EV<<"At time ["<<time+simTime().dbl()<<"],Node["<<senderID<<"] sent frame with seq_num=["<<frame_to_send->getHeader()<<"] and payload=["<<binaryToString(message_only.c_str())<<"] and trailer=["<<crc_only<<"] ";
-
-        sendDelayed(frame_to_send,time, "out");
-        Frame_Base*  temp_frame = frame_to_send->dup();
-        EV<<"pushed to timeouts: "<<temp_frame->getHeader()<<"\n";
-        timeouts.push_back(temp_frame);
+//        std::string messageWithCRC =frame_to_send->getPayload();
+//        std::string message_only=messageWithCRC.substr(0,(messageWithCRC.size()-polynomial.size()-1) );
+//        std::string crc_only=messageWithCRC.substr((messageWithCRC.size()-polynomial.size()),messageWithCRC.size() );
+//
+//        output<<"At time ["<<time+simTime().dbl()<<"],Node["<<senderID<<"], Introducing channel error with code =["<<current_error<<"]"<<"\n";
+//        output<<"hellooooooooooooooooooooooooo"<<"\n";
+//        output<<"At time ["<<time+simTime().dbl()<<"],Node["<<senderID<<"] sent frame with seq_num=["<<frame_to_send->getHeader()<<"] and payload=["<<binaryToString(message_only.c_str())<<"] and trailer=["<<crc_only<<"] ";
+//        EV<<"At time ["<<time+simTime().dbl()<<"],Node["<<senderID<<"] sent frame with seq_num=["<<frame_to_send->getHeader()<<"] and payload=["<<binaryToString(message_only.c_str())<<"] and trailer=["<<crc_only<<"] ";
+//
+//        sendDelayed(frame_to_send,time, "out");
+//        Frame_Base*  temp_frame = frame_to_send->dup();
+//        EV<<"pushed to timeouts: "<<temp_frame->getHeader()<<"\n";
+//        timeouts.push_back(temp_frame);
 //        timeouts[i%WS]=temp_frame;
-
-        time=simTime().dbl()+getParentModule()->par("PT").doubleValue()*(index+1)+ getParentModule()->par("TO").doubleValue();
-        EV<<"timeout: "<<" seq_no: "<<frame_to_send->getHeader()<<" at time:"<<time<<"\n";
+//
+//        time=simTime().dbl()+getParentModule()->par("PT").doubleValue()*(index+1)+ getParentModule()->par("TO").doubleValue();
+//        EV<<"timeout: "<<" seq_no: "<<frame_to_send->getHeader()<<" at time:"<<time<<"\n";
 
         //add TO to handle timeout where it will send a message to itself at timeouts
-        scheduleAt(time,temp_frame);
         index++;
     }
 
 
 }
 
-Frame_Base* Node::applyError(Frame_Base *msg, std::string code_error) {
+void Node::applyError(Frame_Base *msg, std::string code_error,int index) {
+//    output<<"At time ["<<time+simTime().dbl()<<"],Node["<<senderID<<"], Introducing channel error with code =["<<current_error<<"]"<<"\n";
+//    output<<"At time ["<<time+simTime().dbl()<<"],Node["<<senderID<<"] sent frame with seq_num=["<<frame_to_send->getHeader()<<"] and payload=["<<binaryToString(message_only.c_str())<<"] and trailer=["<<crc_only<<"] ";
+//    EV<<"At time ["<<time+simTime().dbl()<<"],Node["<<senderID<<"] sent frame with seq_num=["<<frame_to_send->getHeader()<<"] and payload=["<<binaryToString(message_only.c_str())<<"] and trailer=["<<crc_only<<"] ";
+//    EV<<"send"<<" seq_no: "<<frame_to_send->getHeader()<<" at time:"<<time+simTime().dbl()<<"\n";
+    double time=getParentModule()->par("PT").doubleValue()*(index+1);
+    int modified = -1;
+    std::string lost = "No";
+    int duplicate = 0;
+    double delay = 0;
+
+    Frame_Base* result_msg = msg;
+    std::ostringstream log;
+
     if (code_error[1] == '1') { // Loss
-        EV << ", Modified [-1], Lost [Yes], Duplicate [0], Delay [0]." << endl;
-        return nullptr;
-    } else {if (code_error[0] == '1') { // Modification
-        // Duplicate and modify the frame
+        lost = "Yes";
+        output << "Modified [" << modified << "], Lost [" << lost << "], Duplicate [" << duplicate << "], Delay [" << delay << "]."<<endl;
+        EV << "Modified [" << modified << "], Lost [" << lost << "], Duplicate [" << duplicate << "], Delay [" << delay << "]."<<endl;
+
+
+        return ; // Message is lost
+    }
+
+    if (code_error[0] == '1') { // Modification
         Frame_Base* modified_frame = msg->dup();
         std::string payload = modified_frame->getPayload();
-        if (payload.empty()) {
-            EV << "Error: Payload is empty; no modification applied." << endl;
-            return modified_frame;
+
+        if (!payload.empty()) {
+            std::string binaryPayload = stringToBinary(payload);
+
+            if (!binaryPayload.empty()) {
+                int modified_bit = int(uniform(0, binaryPayload.size()));
+                binaryPayload[modified_bit] = (binaryPayload[modified_bit] == '0') ? '1' : '0';
+
+                if (binaryPayload.size() % 8 == 0) {
+                    std::string modifiedPayload = binaryToString(binaryPayload);
+                    modified_frame->setPayload(modifiedPayload.c_str());
+                    modified = modified_bit;
+                    result_msg = modified_frame;
+                }
+            }
         }
+    }
 
-        // Convert payload to binary
-        std::string binaryPayload = stringToBinary(payload);
-        if (binaryPayload.empty()) {
-            EV << "Error: Failed to convert payload to binary; no modification applied." << endl;
-            return modified_frame;
-        }
-
-        EV << "Original payload: " << payload << endl;
-        EV << "Binary payload before modification: " << binaryPayload << endl;
-
-        // Modify a random bit in the binary payload
-        int modified_bit = int(uniform(0, binaryPayload.size()));
-        EV<<"Modified bit before being modified"<<binaryPayload[modified_bit]<<endl;
-        binaryPayload[modified_bit] = (binaryPayload[modified_bit] == '0') ? '1' : '0';
-        EV<<"Modified bit after being modified"<<binaryPayload[modified_bit]<<endl;
-
-        EV << "Modified bit: " << modified_bit << endl;
-        EV << "Binary payload after modification: " << binaryPayload << endl;
-
-        // Convert binary payload back to string
-        if (binaryPayload.size() % 8 != 0) {
-            EV << "Error: Binary payload size is not a multiple of 8; modification failed." << endl;
-            return modified_frame;
-        }
-
-        std::string modifiedPayload = binaryToString(binaryPayload);
-        modified_frame->setPayload(modifiedPayload.c_str());
-
-        EV << "Modified payload: " << modifiedPayload << endl;
-        EV << "Modified [" << modified_bit << "], Lost [No], Duplicate [0], Delay [0]." << endl;
-
-        return modified_frame;
-
-    } else if (code_error[2] == '1') { // Duplication
+    if (code_error[2] == '1') { // Duplication
         double DD = getParentModule()->par("DD").doubleValue();
         double PT = getParentModule()->par("PT").doubleValue();
-        double time=simTime().dbl();
+        double time = simTime().dbl();
+
         Frame_Base* duplicated_msg = msg->dup();
-        cMessage *convertedMsg = dynamic_cast<cMessage*>(duplicated_msg);
-        convertedMsg->setName("messssssssage dup");
-        EV<<"duplicate message"<<endl;
-        sendDelayed(convertedMsg, time+DD+PT, "out"); //will be sent after the original message
-        EV << ", Modified [-1], Lost [No], Duplicate [1], Delay [0]."<<"at time "<<time+DD+PT << endl;
-        Frame_Base* tempMsg2 = msg->dup();
-        return tempMsg2;
+        cMessage* convertedMsg = dynamic_cast<cMessage*>(duplicated_msg);
 
-    } else if (code_error[3] == '1') { // Delay
+        if (convertedMsg) {
+            duplicate=1;
+            convertedMsg->setName("Duplicate_Message");
+            output<<"At time ["<<time+simTime().dbl()<<"],Node["<<senderID<<"], Introducing channel error with code =["<<code_error<<"]"<<"\n";
+            EV<<"At time ["<<time+simTime().dbl()<<"],Node["<<senderID<<"], Introducing channel error with code =["<<code_error<<"]"<<"\n";
+
+                std::string messageWithCRC =duplicated_msg->getPayload();
+                std::string message_only=messageWithCRC.substr(0,(messageWithCRC.size()-polynomial.size()-1) );
+                std::string crc_only=messageWithCRC.substr((messageWithCRC.size()-polynomial.size()),messageWithCRC.size() );
+                output<<"At time ["<<time+simTime().dbl()<<"],Node["<<senderID<<"] sent frame with seq_num=["<<duplicated_msg->getHeader()<<"] and payload=["<<binaryToString(message_only.c_str())<<"] and trailer=["<<crc_only<<"] "<<endl;
+                EV<<"At time ["<<time+simTime().dbl()<<"],Node["<<senderID<<"] sent frame with seq_num=["<<duplicated_msg->getHeader()<<"] and payload=["<<binaryToString(message_only.c_str())<<"] and trailer=["<<crc_only<<"] "<<endl;
+
+                output<< "Modified [" << modified << "], Lost [" << lost << "], Duplicate [" << duplicate << "], Delay [" << delay << "]."<<endl;
+                EV<< "Modified [" << modified << "], Lost [" << lost << "], Duplicate [" << duplicate << "], Delay [" << delay << "]."<<endl;
+
+                   EV<<"pushed to timeouts: "<<duplicated_msg->getHeader()<<"\n";
+                   timeouts.push_back(duplicated_msg);
+                   double time_out=simTime().dbl()+getParentModule()->par("PT").doubleValue()*(index+1)+ getParentModule()->par("TO").doubleValue();
+                   EV<<"timeout: "<<" seq_no: "<<duplicated_msg->getHeader()<<" at time:"<<time_out<<"\n";
+                   scheduleAt(time_out,duplicated_msg);
+
+            sendDelayed(convertedMsg, time + DD + PT, "out");
+            duplicate = 2;
+        }
+    }
+
+    if (code_error[3] == '1') { // Delay
         double delayTime = getParentModule()->par("ED").doubleValue();
-        msg->addPar("delay").setDoubleValue(delayTime);
+        time+=delayTime;
 
-        EV << ", Modified [-1], Lost [No], Duplicate [0], Delay [" << delayTime << "]." << endl;
-        return msg;
     }
-    }
+     output<<"At time ["<<time+simTime().dbl()<<"],Node["<<senderID<<"], Introducing channel error with code =["<<code_error<<"]"<<"\n";
+     EV<<"At time ["<<time+simTime().dbl()<<"],Node["<<senderID<<"], Introducing channel error with code =["<<code_error<<"]"<<"\n";
 
-    return msg;
+    std::string messageWithCRC =result_msg->getPayload();
+    std::string message_only=messageWithCRC.substr(0,(messageWithCRC.size()-polynomial.size()-1) );
+    std::string crc_only=messageWithCRC.substr((messageWithCRC.size()-polynomial.size()),messageWithCRC.size() );
+    output<<"At time ["<<time+simTime().dbl()<<"],Node["<<senderID<<"] sent frame with seq_num=["<<result_msg->getHeader()<<"] and payload=["<<binaryToString(message_only.c_str())<<"] and trailer=["<<crc_only<<"] "<<endl;
+    EV<<"At time ["<<time+simTime().dbl()<<"],Node["<<senderID<<"] sent frame with seq_num=["<<result_msg->getHeader()<<"] and payload=["<<binaryToString(message_only.c_str())<<"] and trailer=["<<crc_only<<"] "<<endl;
+
+    output<< "Modified [" << modified << "], Lost [" << lost << "], Duplicate [" << duplicate << "], Delay [" << delay << "]."<<endl;
+    EV<< "Modified [" << modified << "], Lost [" << lost << "], Duplicate [" << duplicate << "], Delay [" << delay << "]."<<endl;
+
+    Frame_Base*  temp_frame = result_msg->dup();
+    EV<<"pushed to timeouts: "<<temp_frame->getHeader()<<"\n";
+    timeouts.push_back(temp_frame);
+    double time_out2=simTime().dbl()+getParentModule()->par("PT").doubleValue()*(index+1)+ getParentModule()->par("TO").doubleValue();
+    EV<<"timeout: "<<" seq_no: "<<temp_frame->getHeader()<<" at time:"<<time_out2<<"\n";
+    scheduleAt(time_out2,temp_frame);
+
+    sendDelayed(result_msg,time, "out");
 }
 
 
@@ -671,6 +687,4 @@ void Node:: prepareMessages()
 
 
 }
-
-
 
