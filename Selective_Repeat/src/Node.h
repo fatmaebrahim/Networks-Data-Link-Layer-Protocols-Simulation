@@ -34,12 +34,14 @@ class Node : public cSimpleModule
 public:
 
     void receiveFrame(cMessage *msg);
+    void receiveNack(cMessage *msg);
     void sendFrame(cMessage *msg);
     void prepareMessages();
     void start();
     bool isAckLost();
     int inc(int seq_no);
-    bool isBetween(int frame_expected, int received_seq);
+    int incWS(int seq_no);
+    bool isBetween(int frame_expected, int received_seq,int receiver_end_index);
     Frame_Base* applyError(Frame_Base* msg,std::string code_error);
     std::string calculateCRC(const std::string& input, const std::string& polynomial);
     bool verifyCRC(const std::string& receivedMessage, const std::string& polynomial);
@@ -51,6 +53,7 @@ public:
 
     std::vector<Frame_Base*> receiver_buffer;
     std::vector<bool> arrived;
+    std::vector<Frame_Base*> timeouts;
   protected:
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;
