@@ -41,8 +41,9 @@ public:
     bool isAckLost();
     int inc(int seq_no);
     int incWS(int seq_no);
+    int dec(int seq_no);
     bool isBetween(int frame_expected, int received_seq,int receiver_end_index);
-    Frame_Base* applyError(Frame_Base* msg,std::string code_error);
+    void applyError(Frame_Base* msg,std::string code_error,int index);
     std::string calculateCRC(const std::string& input, const std::string& polynomial);
     bool verifyCRC(const std::string& receivedMessage, const std::string& polynomial);
 
