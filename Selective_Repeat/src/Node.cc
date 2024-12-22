@@ -50,7 +50,7 @@ bool flag_timout;
 bool flag_nack;
 std::string current_error;
 std::string polynomial = "100000111";
-std::ofstream output("output0.txt");
+std::ofstream output("output7.txt");
 
 void Node::initialize()
 {
@@ -77,7 +77,7 @@ void Node::handleMessage(cMessage *msg)
     if(strcmp(msg->getName(),"0")==0){
         EV << "Received a message: " << msg->getName() << endl;
         //message from coordinator
-        path= "../simulations/inputs/input0.txt";
+        path= "../simulations/inputs/input7.txt";
         prepareMessages();
         senderID=0;
         start();
@@ -163,8 +163,8 @@ int Node:: incWS(int seq_no){
 bool Node:: isAckLost(){
     double loss_prob = getParentModule()->par("LP").doubleValue();
     double random_prob = (double)rand() / RAND_MAX;
-    return false;
-//    return random_prob < loss_prob;
+//    return false;
+    return random_prob < loss_prob;
 
 
 }
@@ -310,16 +310,16 @@ void Node::receiveFrame(cMessage *msg){
 
 
                 EV<<(frame_expected%WS)<<" "<<receiver_buffer.size()<<"\n";
-                while(arrived[frame_expected%(SN+1)] && (frame_expected%WS)<receiver_buffer.size())
+                while(arrived[frame_expected%(SN+1)] && (frame_expected%WS)<receiver_buffer.size()&&receiver_buffer[frame_expected%WS]!=nullptr)
                 {
                     EV<<"ttttttttttttttttt: "<<receiver_buffer[1]<<endl;
                     EV<<"New frame expected "<< frame_expected%WS<<" , "<<receiver_start_index<<" , "<<receiver_end_index<<"\n";
 
-                    if(receiver_buffer[frame_expected%WS]!=nullptr){
-                        EV<<"Uploading payload= ["<<deframing(binaryToString(receiver_buffer[frame_expected%WS]->getPayload()))<<" ] and seq_num = ["<<received->getHeader()<<"]   to the network layer "<<endl;
-                        output<<"Uploading payload= ["<<deframing(binaryToString(receiver_buffer[frame_expected%WS]->getPayload()))<<" ] and seq_num = ["<<received->getHeader()<<"]   to the network layer "<<endl;
+//                    if(receiver_buffer[frame_expected%WS]!=nullptr){
+                        EV<<"Uploading payload= ["<<deframing(binaryToString(receiver_buffer[frame_expected%WS]->getPayload()))<<" ] and seq_num = ["<<receiver_buffer[frame_expected%WS]->getHeader()<<"]   to the network layer "<<endl;
+                        output<<"Uploading payload= ["<<deframing(binaryToString(receiver_buffer[frame_expected%WS]->getPayload()))<<" ] and seq_num = ["<<receiver_buffer[frame_expected%WS]->getHeader()<<"]   to the network layer "<<endl;
 
-                    }
+//                    }
 
                     no_nack=true;
                     arrived[frame_expected%(SN+1)]=false;
