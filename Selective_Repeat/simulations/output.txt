@@ -1,0 +1,31 @@
+At time [0],Node[0], Introducing channel error with code =[0000]
+At time [0.5],Node[0] sent frame with seq_num=[0] and payload=[$/$He\\llo/$	] and trailer=[0110] 
+Modified [-1], Lost [No], Duplicate [0], Delay [0].
+At time [0.5],Node[0], Introducing channel error with code =[0000]
+At time [1],Node[0] sent frame with seq_num=[1] and payload=[$Hello1	] and trailer=[0010] 
+Modified [-1], Lost [No], Duplicate [0], Delay [0].
+At time [1],Node[0], Introducing channel error with code =[0000]
+At time [1.5],Node[0] sent frame with seq_num=[2] and payload=[$Hello2	] and trailer=[0110] 
+Modified [-1], Lost [No], Duplicate [0], Delay [0].
+At time [1.5],Node[0], Introducing channel error with code =[0000]
+At time [2],Node[0] sent frame with seq_num=[3] and payload=[$Hello3	] and trailer=[0001] 
+Modified [-1], Lost [No], Duplicate [0], Delay [0].
+At time [2],Node[1] Sending [ACK] with number [1] ,loss [No].
+At time [2.5],Node[1] Sending [ACK] with number [2] ,loss [No].
+At time [3],Node[1] Sending [ACK] with number [3] ,loss [No].
+At time [3.5],Node[1] Sending [ACK] with number [4] ,loss [No].
+At time [3],Node[0], Introducing channel error with code =[0000]
+At time [3.5],Node[0] sent frame with seq_num=[4] and payload=[$Hello4	] and trailer=[0011] 
+Modified [-1], Lost [No], Duplicate [0], Delay [0].
+Modified [-1], Lost [Yes], Duplicate [0], Delay [0].
+At time [4],Node[0], Introducing channel error with code =[0000]
+At time [4.5],Node[0] sent frame with seq_num=[6] and payload=[$Hello6	] and trailer=[0000] 
+Modified [-1], Lost [No], Duplicate [0], Delay [0].
+At time [4.5],Node[0], Introducing channel error with code =[0000]
+At time [5],Node[0] sent frame with seq_num=[7] and payload=[$Hello7	] and trailer=[0111] 
+Modified [-1], Lost [No], Duplicate [0], Delay [0].
+At time [5],Node[1] Sending [ACK] with number [5] ,loss [No].
+At time [6],Node[1] Sending [NACK] with number [5] ,loss [No].
+At time [6.5],Node[1] Sending [ACK] with number [5] ,loss [No].
+At time [8.5],Node[0], Introducing channel error with code =[0000]
+At time [8.5],Node[0] sent frame with seq_num=[5] and payload=[$Hello5	] and trailer=[0100] At time [9],Node[1] Sending [ACK] with number [0] ,loss [No].

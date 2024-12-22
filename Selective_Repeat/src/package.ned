@@ -16,7 +16,7 @@ network Network
         double PT = default(0.5); // sender’s and receivers’ processing time
         double TD = default(1.0); // channel’s transmission delay
         double ED = default(4.0); // channel’s error delay ED
-        double DD = default(1.0); //channel’s duplication delay
+        double DD = default(0.1); //channel’s duplication delay
         double LP = default(0.0); // frame loss probability
     submodules:
         coordinator: Coordinator {
