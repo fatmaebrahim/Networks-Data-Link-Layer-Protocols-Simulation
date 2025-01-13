@@ -1,0 +1,91 @@
+At time [0],Node[0], Introducing channel error with code =[0000]
+At time [0.5],Node[0] sent frame with seq_num=[0] and payload=[$The violin, sometimes known as a fiddle$] and trailer=[11110010] 
+Modified [-1], Lost [No], Duplicate [0], Delay [0].
+At time [0.5],Node[0], Introducing channel error with code =[0010]
+At time [1],Node[0] sent frame with seq_num=[1] and payload=[$is a wooden chordophone (string instrument)$] and trailer=[01111010] 
+Modified [-1], Lost [No], Duplicate [1], Delay [0].
+At time [0.5],Node[0], Introducing channel error with code =[0000]
+At time [1],Node[0] sent frame with seq_num=[1] and payload=[$is a wooden chordophone (string instrument)$] and trailer=[01111010] 
+Modified [-1], Lost [No], Duplicate [2], Delay [0].
+At time [1],Node[0], Introducing channel error with code =[0100]
+At time [1.5],Node[0] sent frame with seq_num=[2] and payload=[$in the violin family.$] and trailer=[11111111] 
+Modified [-1], Lost [Yes], Duplicate [0], Delay [0].
+At time [1.5],Node[0], Introducing channel error with code =[0110]
+At time [2],Node[0] sent frame with seq_num=[3] and payload=[$Most violins have a hollow wooden body.$] and trailer=[10000111] 
+Modified [-1], Lost [Yes], Duplicate [0], Delay [0].
+Uploading payload= [The violin, sometimes known as a fiddle$ ] and seq_num = [0]   to the network layer 
+At time [2],Node[1] Sending [ACK] with number [1] ,loss [No].
+Uploading payload= [is a wooden chordophone (string instrument)$ ] and seq_num = [1]   to the network layer 
+At time [2.5],Node[1] Sending [ACK] with number [2] ,loss [No].
+At time [3],Node[0], Introducing channel error with code =[0000]
+At time [3.5],Node[0] sent frame with seq_num=[4] and payload=[$It is the smallest and thus highest-pitched instrument$] and trailer=[00111100] 
+Modified [-1], Lost [No], Duplicate [0], Delay [0].
+At time [3.5],Node[0], Introducing channel error with code =[0000]
+At time [4],Node[0] sent frame with seq_num=[5] and payload=[$(soprano) in the family in regular use.$] and trailer=[11000110] 
+Modified [-1], Lost [No], Duplicate [0], Delay [0].
+At time [5],Node[1] Sending [NACK] with number [2] ,loss [No].
+At time [5.5],Node[1] Sending [ACK] with number [2] ,loss [No].
+At time [6.5],Node[0] sent frame with seq_num=[2] and payload=[$in the violin family.$] and trailer=[11111111] 
+Uploading payload= [in the violin family.$ ] and seq_num = [2]   to the network layer 
+At time [8],Node[1] Sending [ACK] with number [3] ,loss [No].
+At time [9],Node[0], Introducing channel error with code =[0000]
+At time [9.5],Node[0] sent frame with seq_num=[6] and payload=[$[a] The violin typically has four strings,$] and trailer=[10011111] 
+Modified [-1], Lost [No], Duplicate [0], Delay [0].
+At time [11],Node[1] Sending [NACK] with number [3] ,loss [No].
+At time [12.5],Node[0] sent frame with seq_num=[3] and payload=[$Most violins have a hollow wooden body.$] and trailer=[10000111] 
+Uploading payload= [Most violins have a hollow wooden body.$ ] and seq_num = [3]   to the network layer 
+Uploading payload= [The violin, sometimes known as a fiddle$ ] and seq_num = [0]   to the network layer 
+Uploading payload= [is a wooden chordophone (string instrument)$ ] and seq_num = [1]   to the network layer 
+Uploading payload= [in the violin family.$ ] and seq_num = [2]   to the network layer 
+At time [14],Node[1] Sending [ACK] with number [7] ,loss [No].
+At time [15],Node[0], Introducing channel error with code =[0000]
+At time [15.5],Node[0] sent frame with seq_num=[7] and payload=[$(some can have five/$), usually tuned in perfect$] and trailer=[00110101] 
+Modified [-1], Lost [No], Duplicate [0], Delay [0].
+At time [15.5],Node[0], Introducing channel error with code =[0000]
+At time [16],Node[0] sent frame with seq_num=[0] and payload=[$fifths with notes G3, D4, A4, E5,$] and trailer=[01000010] 
+Modified [-1], Lost [No], Duplicate [0], Delay [0].
+At time [16],Node[0], Introducing channel error with code =[0100]
+At time [16.5],Node[0] sent frame with seq_num=[1] and payload=[$and is most commonly played by drawing$] and trailer=[10000001] 
+Modified [-1], Lost [Yes], Duplicate [0], Delay [0].
+At time [16.5],Node[0], Introducing channel error with code =[0000]
+At time [17],Node[0] sent frame with seq_num=[2] and payload=[$a bow across its strings.$] and trailer=[01111101] 
+Modified [-1], Lost [No], Duplicate [0], Delay [0].
+Uploading payload= [(some can have five$), usually tuned in perfect$ ] and seq_num = [7]   to the network layer 
+At time [17],Node[1] Sending [ACK] with number [0] ,loss [No].
+Uploading payload= [fifths with notes G3, D4, A4, E5,$ ] and seq_num = [0]   to the network layer 
+At time [17.5],Node[1] Sending [ACK] with number [1] ,loss [No].
+At time [18.5],Node[1] Sending [NACK] with number [1] ,loss [No].
+At time [18],Node[0], Introducing channel error with code =[0000]
+At time [18.5],Node[0] sent frame with seq_num=[3] and payload=[$It can also be played by plucking$] and trailer=[01000011] 
+Modified [-1], Lost [No], Duplicate [0], Delay [0].
+At time [18.5],Node[0], Introducing channel error with code =[1001]
+At time [19],Node[0] sent frame with seq_num=[4] and payload=[$the strings/$ with the bingers (pizzicato)$] and trailer=[10111100] 
+Modified [197], Lost [No], Duplicate [0], Delay [4].
+At time [20],Node[0] sent frame with seq_num=[1] and payload=[$and is most commonly played by drawing$] and trailer=[10000001] 
+At time [20],Node[1] Sending [ACK] with number [1] ,loss [No].
+Uploading payload= [and is most commonly played by drawing$ ] and seq_num = [1]   to the network layer 
+Uploading payload= [in the violin family.$ ] and seq_num = [2]   to the network layer 
+Uploading payload= [(some can have five$), usually tuned in perfect$ ] and seq_num = [7]   to the network layer 
+At time [21.5],Node[1] Sending [ACK] with number [4] ,loss [No].
+At time [22.5],Node[0], Introducing channel error with code =[0000]
+At time [23],Node[0] sent frame with seq_num=[5] and payload=[$and, in specialized cases, by striking$] and trailer=[00010110] 
+Modified [-1], Lost [No], Duplicate [0], Delay [0].
+At time [23],Node[0], Introducing channel error with code =[0010]
+At time [23.5],Node[0] sent frame with seq_num=[6] and payload=[$the strings with the wooden side/$ of the bow$] and trailer=[11110011] 
+Modified [-1], Lost [No], Duplicate [1], Delay [0].
+At time [23],Node[0], Introducing channel error with code =[0000]
+At time [23.5],Node[0] sent frame with seq_num=[6] and payload=[$the strings with the wooden side/$ of the bow$] and trailer=[11110011] 
+Modified [-1], Lost [No], Duplicate [2], Delay [0].
+At time [23.5],Node[0], Introducing channel error with code =[0000]
+At time [24],Node[0] sent frame with seq_num=[7] and payload=[$(col legno).$] and trailer=[01011001] 
+Modified [-1], Lost [No], Duplicate [0], Delay [0].
+At time [24.5],Node[1] Sending [NACK] with number [4] ,loss [No].
+At time [25],Node[1] Sending [ACK] with number [4] ,loss [No].
+At time [25.1],Node[1] Sending [ACK] with number [4] ,loss [No].
+At time [25.5],Node[1] Sending [ACK] with number [4] ,loss [No].
+At time [26],Node[0] sent frame with seq_num=[4] and payload=[$the strings/$ with the fingers (pizzicato)$] and trailer=[10111100] 
+Uploading payload= [the strings$ with the fingers (pizzicato)$ ] and seq_num = [4]   to the network layer 
+Uploading payload= [and is most commonly played by drawing$ ] and seq_num = [1]   to the network layer 
+Uploading payload= [in the violin family.$ ] and seq_num = [2]   to the network layer 
+Uploading payload= [(some can have five$), usually tuned in perfect$ ] and seq_num = [7]   to the network layer 
+At time [27.5],Node[1] Sending [ACK] with number [0] ,loss [No].

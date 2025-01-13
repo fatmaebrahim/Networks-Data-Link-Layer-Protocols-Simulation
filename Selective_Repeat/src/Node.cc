@@ -50,7 +50,7 @@ bool flag_timout;
 bool flag_nack;
 std::string current_error;
 std::string polynomial = "100000111";
-std::ofstream output("output7.txt");
+std::ofstream output("../simulations/outputs/output7.txt");
 
 void Node::initialize()
 {
@@ -86,7 +86,7 @@ void Node::handleMessage(cMessage *msg)
     else  if(strcmp(msg->getName(),"1")==0){
         EV << "Received a message: " << msg->getName() << endl;
         //message from coordinator
-        path= "../simulations/inputs/input1.txt";
+        path= "../simulations/inputs/input7.txt";
         prepareMessages();
         senderID=1;
         start();
@@ -173,7 +173,7 @@ void Node::receiveNack(cMessage *msg){
     Frame_Base* received = dynamic_cast<Frame_Base*>(msg);
     int received_seq= received->getAck_nack_number();
     int nack_index = sender_start_index;
-    while(nack_index<sender_buffer.size()-1&&  sender_buffer[nack_index]->getHeader()!=received_seq && nack_index<sender_buffer.size()-1)
+    while(nack_index<sender_buffer.size()-1&&  sender_buffer[nack_index]->getHeader()!=received_seq)
     {
         nack_index++;
     }
@@ -191,7 +191,7 @@ void Node::receiveNack(cMessage *msg){
      double time=getParentModule()->par("PT").doubleValue()+getParentModule()->par("TD").doubleValue();
      std::string messageWithCRC =frame_to_send->getPayload();
      std::string message_only=messageWithCRC.substr(0,(messageWithCRC.size()-polynomial.size()+1) );
-                    std::string crc_only=messageWithCRC.substr((messageWithCRC.size()-polynomial.size()+1),messageWithCRC.size() );
+     std::string crc_only=messageWithCRC.substr((messageWithCRC.size()-polynomial.size()+1),messageWithCRC.size() );
 //     output<<"At time ["<<simTime().dbl()<<"],Node["<<senderID<<"], Introducing channel error with code =["<<current_error<<"]"<<"\n";
      EV<<"At time ["<<simTime().dbl()<<"],Node["<<senderID<<"], Introducing channel error with code =["<<current_error<<"]"<<"\n";
 //     output<<"nackkkkkkkkkkkkkkkkkkkkkkkkk"<<"\n";
@@ -376,17 +376,21 @@ void Node::sendFrame(cMessage *msg){
 
     int ack_dec;
 
-    for (int i =0; i < timeouts.size();i++){
-//        EV<<"timeoutssssss: "<<timeouts[i]->getHeader()<<"\n";
-        ack_dec=dec(ackno);
-        if (isBetween(sender_start_index%(SN+1),timeouts[i]->getHeader(),ack_dec)){
+    std::vector<Frame_Base*> updatedTimeouts;
 
-            EV<<"canceled event: "<<timeouts[i]->getHeader()<<"\n";
+    for (int i = 0; i < timeouts.size(); i++) {
+        ack_dec = dec(ackno);
+        if (isBetween(sender_start_index % (SN + 1), timeouts[i]->getHeader(), ack_dec)) {
+            EV << "canceled event: " << timeouts[i]->getHeader() << "\n";
             cancelEvent(timeouts[i]);
+        } else {
+            updatedTimeouts.push_back(timeouts[i]);
         }
     }
+    timeouts = updatedTimeouts;
+
     //slide window
-    std::string canceled="";
+
 //    EV<<"sender_start_index "<<sender_start_index<<endl;
     while (sender_start_index<sender_buffer.size()-1&& sender_buffer[sender_start_index]->getHeader() != received->getAck_nack_number()) {
         EV << "send:" << sender_start_index<<"  end:"<<sender_end_index<<"  ackno:" <<ackno<<"\n";
@@ -398,17 +402,10 @@ void Node::sendFrame(cMessage *msg){
           //sender_end_index=inc(sender_end_index);
           sender_end_index++;
          }
-//        canceled+=std::to_string(sender_start_index);
+
 
     }
-//    EV<<"the canceled frames are "<<canceled<<endl;
 
-//    if (sender_start_index==sender_start_index && !isBetween(sender_start_index , next_frame_to_send,sender_start_index)){
-//        cancelEvent(timeouts[sender_start_index%WS]);
-//        EV<<"canceled event: "<<timeouts[sender_start_index%WS]->getHeader()<<"\n";
-//    }
-
-    //send frames in the new window
 
     int index=0;
 
@@ -425,15 +422,6 @@ void Node::sendFrame(cMessage *msg){
 
              next_frame_to_send++;
 
-//        Frame_Base*  temp_frame = frame_to_send->dup();
-//        EV<<"pushed to timeouts: "<<temp_frame->getHeader()<<"\n";
-//        timeouts.push_back(temp_frame);
-////        timeouts[index%WS]=temp_frame;
-//
-//        //add TO to handle timeout where it will send a message to itself at timeouts
-//        time=simTime().dbl()+getParentModule()->par("PT").doubleValue()*(index+1)+ getParentModule()->par("TO").doubleValue();
-//        EV<<"timeout: "<<" seq_no: "<<frame_to_send->getHeader()<<" at time:"<<time<<"\n";
-//        scheduleAt(time,temp_frame);
         index++;
     }
 
@@ -490,6 +478,15 @@ void Node::applyError(Frame_Base *msg, std::string code_error,int index) {
         EV << "Modified [" << modified << "], Lost [" << lost << "], Duplicate [" << duplicate << "], Delay [" << delay << "]."<<endl;
 
 
+            Frame_Base*  temp_frame = result_msg->dup();
+
+            timeouts.push_back(temp_frame);
+            double time_out2=time+simTime().dbl()-delay+ getParentModule()->par("TO").doubleValue()+PT+TD;
+            EV<<"will timeout at : "<<temp_frame->getHeader()<<"at time: "<<time_out2<<"\n";
+            EV<<"timeout: "<<" seq_no: "<<temp_frame->getHeader()<<" at time:"<<time_out2<<"\n";
+            scheduleAt(time_out2,temp_frame);
+
+
         return ; // Message is lost
     }
 
@@ -538,9 +535,10 @@ void Node::applyError(Frame_Base *msg, std::string code_error,int index) {
     EV<< "Modified [" << modified << "], Lost [" << lost << "], Duplicate [" << duplicate << "], Delay [" << delay << "]."<<endl;
 
     Frame_Base*  temp_frame = result_msg->dup();
-    EV<<"pushed to timeouts: "<<temp_frame->getHeader()<<"\n";
+
     timeouts.push_back(temp_frame);
-    double time_out2=simTime().dbl()+getParentModule()->par("PT").doubleValue()*(index+1)+ getParentModule()->par("TO").doubleValue();
+    double time_out2=time+simTime().dbl()-delay+ getParentModule()->par("TO").doubleValue();
+    EV<<"pushed to timeouts: "<<temp_frame->getHeader()<<"at time: "<<time_out2<<"\n";
     EV<<"timeout: "<<" seq_no: "<<temp_frame->getHeader()<<" at time:"<<time_out2<<"\n";
     scheduleAt(time_out2,temp_frame);
 
@@ -566,12 +564,12 @@ void Node::applyError(Frame_Base *msg, std::string code_error,int index) {
                     output<< "Modified [" << modified << "], Lost [" << lost << "], Duplicate [" << duplicate << "], Delay [" << delay << "]."<<endl;
                     EV<< "Modified [" << modified << "], Lost [" << lost << "], Duplicate [" << duplicate << "], Delay [" << delay << "]."<<endl;
 
-                       EV<<"pushed to timeouts: "<<duplicated_msg->getHeader()<<"\n";
+
                        Frame_Base* temp_frame = duplicated_msg->dup();
-                       double time_out=simTime().dbl()+getParentModule()->par("PT").doubleValue()*(index+1)+ getParentModule()->par("TO").doubleValue();
+                       double time_out=time+simTime().dbl()-delay+ getParentModule()->par("TO").doubleValue();
                        EV<<"timeout: "<<" seq_no: "<<temp_frame->getHeader()<<" at time:"<<time_out<<"\n";
 
-
+                       EV<<"pushed to timeouts: "<<temp_frame->getHeader()<<"at time: "<<time_out<<"\n";
                        timeouts.push_back(temp_frame);
                        scheduleAt(time_out,temp_frame);
 
@@ -694,11 +692,10 @@ void Node:: prepareMessages()
 
                 std::string binaryMessage = stringToBinary(framed);
                 std::string messageWithCRC = calculateCRC(binaryMessage, polynomial);
-                std::string message_only=messageWithCRC.substr(0,(messageWithCRC.size()-polynomial.size()+1) );
-                std::string crc_only=messageWithCRC.substr((messageWithCRC.size()-polynomial.size()+1),messageWithCRC.size() );
+//                std::string message_only=messageWithCRC.substr(0,(messageWithCRC.size()-polynomial.size()+1) );
+//                std::string crc_only=messageWithCRC.substr((messageWithCRC.size()-polynomial.size()+1),messageWithCRC.size() );
                 Frame_Base* frame = new Frame_Base;
                 frame->setPayload(messageWithCRC.c_str());
-//                frame->setTrailer(crc_only);
                 frame->setFrameType(2);
                 frame->setHeader(seq_no);
                 seq_no=inc(seq_no);

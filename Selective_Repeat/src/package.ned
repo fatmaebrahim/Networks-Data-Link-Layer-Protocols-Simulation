@@ -17,7 +17,7 @@ network Network
         double TD = default(1.0); // channel’s transmission delay
         double ED = default(4.0); // channel’s error delay ED
         double DD = default(0.1); //channel’s duplication delay
-        double LP = default(0.0); // frame loss probability
+        double LP = default(0.35); // frame loss probability
     submodules:
         coordinator: Coordinator {
             @display("p=225,80");

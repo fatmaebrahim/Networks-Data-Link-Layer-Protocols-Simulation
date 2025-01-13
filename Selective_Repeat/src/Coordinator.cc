@@ -25,7 +25,7 @@ void Coordinator::initialize()
     auto res = readLine(path2);
     std::string node_id = res.first;
     std::string start_time = res.second;
-    std::cout <<"nodeid: "<< node_id << " "<<"starttime: "<<start_time<<"\n";
+    EV <<"nodeid: "<< node_id << " "<<"starttime: "<<start_time<<"\n";
 
     if (node_id=="0"){
         cMessage *msg=new cMessage("0");
@@ -58,6 +58,7 @@ std::pair<std::string, std::string>Coordinator:: readLine(const std::string& pat
         throw std::runtime_error("Could not open the file.");
     }
     while (std::getline(file, line)) {
+
         node_id = line[0];
         start_time = line[2];
     }
