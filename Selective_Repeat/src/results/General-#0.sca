@@ -1,8 +1,8 @@
 version 3
-run General-0-20241221-21:51:49-3680
+run General-0-20241222-06:33:57-17580
 attr configname General
-attr datetime 20241221-21:51:49
-attr datetimef 20241221-215149
+attr datetime 20241222-06:33:57
+attr datetimef 20241222-063357
 attr experiment General
 attr inifile omnetpp.ini
 attr iterationvars ""
@@ -10,13 +10,21 @@ attr iterationvarsd ""
 attr iterationvarsf ""
 attr measurement ""
 attr network Network
-attr processid 3680
+attr processid 17580
 attr repetition 0
 attr replication #0
 attr resultdir results
 attr runnumber 0
 attr seedset 0
 config network Network
+config **.WS 4
+config **.TO 10.0
+config **.PT 0.5
+config **.TD 1.0
+config **.ED 4.0
+config **.DD 0.1
+config **.LP 0.5
+config **.SN 7
 
 par Network.node0.Port$o.channel typename "\"ned.IdealChannel\""
 par Network.coordinator.ports$o[0].channel typename "\"ned.IdealChannel\""
@@ -34,6 +42,6 @@ par Network TO 10
 par Network PT 0.5
 par Network TD 1
 par Network ED 4
-par Network DD 1
-par Network LP 0
+par Network DD 0.1
+par Network LP 0.5
 

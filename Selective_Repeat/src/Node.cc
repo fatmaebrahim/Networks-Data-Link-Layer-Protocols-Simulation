@@ -50,7 +50,11 @@ bool flag_timout;
 bool flag_nack;
 std::string current_error;
 std::string polynomial = "100000111";
+<<<<<<< HEAD
 std::ofstream output("../simulations/outputs/output7.txt");
+=======
+std::ofstream output("output7.txt");
+>>>>>>> e329ed6b71c69311b6685da2caf4506924fe4bdf
 
 void Node::initialize()
 {

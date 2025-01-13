@@ -1,0 +1,34 @@
+At time [0],Node[0], Introducing channel error with code =[0000]
+At time [0.5],Node[0] sent frame with seq_num=[0] and payload=[$Sherlock Holmes is a fictional detective$] and trailer=[10111111] 
+Modified [-1], Lost [No], Duplicate [0], Delay [0].
+At time [0.5],Node[0], Introducing channel error with code =[0010]
+At time [1],Node[0] sent frame with seq_num=[1] and payload=[$created by British author/$ Sir Arthur Conan Doyle.$] and trailer=[00101000] 
+Modified [-1], Lost [No], Duplicate [1], Delay [0].
+At time [1],Node[0], Introducing channel error with code =[0000]
+At time [1.1],Node[0] sent frame with seq_num=[1] and payload=[$created by British author/$ Sir Arthur Conan Doyle.$] and trailer=[00101000] 
+Modified [-1], Lost [No], Duplicate [2], Delay [0].
+At time [0],Node[0], Introducing channel error with code =[0100]
+At time [0.5],Node[0] sent frame with seq_num=[2] and payload=[$Referring to himself as a// "consulting detective" in the stories,$] and trailer=[10110100] 
+Modified [-1], Lost [Yes], Duplicate [0], Delay [0].
+At time [1.5],Node[0], Introducing channel error with code =[0000]
+At time [2],Node[0] sent frame with seq_num=[3] and payload=[$Holmes is known for his proficiency with observation,$] and trailer=[00010110] 
+Modified [-1], Lost [No], Duplicate [0], Delay [0].
+Uploading payload= [Sherlock Holmes is a fictional detective$ ] and seq_num = [0]   to the network layer 
+At time [2],Node[1] Sending [ACK] with number [1] ,loss [No].
+Uploading payload= [created by British author$ Sir Arthur Conan Doyle.$ ] and seq_num = [1]   to the network layer 
+At time [2.5],Node[1] Sending [ACK] with number [2] ,loss [No].
+At time [3.5],Node[1] Sending [NACK] with number [2] ,loss [No].
+At time [3],Node[0], Introducing channel error with code =[0000]
+At time [3.5],Node[0] sent frame with seq_num=[4] and payload=[$deduction, forensic science,$] and trailer=[11011000] 
+Modified [-1], Lost [No], Duplicate [0], Delay [0].
+At time [3.5],Node[0], Introducing channel error with code =[0000]
+At time [4],Node[0] sent frame with seq_num=[5] and payload=[$and// logical reasoning/$ that borders on the fantastic,$] and trailer=[01010011] 
+Modified [-1], Lost [No], Duplicate [0], Delay [0].
+At time [5],Node[0] sent frame with seq_num=[2] and payload=[$Referring to himself as a// "consulting detective" in the stories,$] and trailer=[10110100] 
+At time [5],Node[1] Sending [ACK] with number [2] ,loss [No].
+At time [5.5],Node[1] Sending [ACK] with number [2] ,loss [No].
+Uploading payload= [Referring to himself as a/ "consulting detective" in the stories,$ ] and seq_num = [2]   to the network layer 
+At time [6.5],Node[1] Sending [ACK] with number [3] ,loss [No].
+At time [7.5],Node[0], Introducing channel error with code =[0101]
+At time [8],Node[0] sent frame with seq_num=[6] and payload=[$which he employs when investigating cases for a wide variety of clients,$] and trailer=[00011101] 
+Modified [-1], Lost [Yes], Duplicate [0], Delay [0].
